@@ -56,6 +56,10 @@ void ShaderVariation::OnDeviceLost()
     // No-op on Direct3D11
 }
 
+#if UWP
+extern "C" const wchar_t* SDL_UWP_GetCacheDir();
+#endif
+
 bool ShaderVariation::Create()
 {
     Release();
@@ -74,7 +78,11 @@ bool ShaderVariation::Create()
     SplitPath(owner_->GetName(), path, name, extension);
     extension = type_ == VS ? ".vs4" : ".ps4";
 
-    String binaryShaderName = graphics_->GetShaderCacheDir() + name + "_" + StringHash(defines_).ToString() + extension;
+#if UWP
+    String binaryShaderName = String(SDL_UWP_GetCacheDir()) + "/" + name + "_" + StringHash(defines_).ToString() + extension;
+#else
+    String binaryShaderName = path + "Cache/" + name + "_" + StringHash(defines_).ToString() + extension;
+#endif
 
     if (!LoadByteCode(binaryShaderName))
     {
@@ -344,7 +352,7 @@ void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
     ID3D11ShaderReflection* reflection = nullptr;
     D3D11_SHADER_DESC shaderDesc;
 
-    HRESULT hr = D3DReflect(bufData, bufSize, IID_ID3D11ShaderReflection, (void**)&reflection);
+    HRESULT hr = D3DReflect(bufData, bufSize, __uuidof(ID3D11ShaderReflection), (void**)&reflection);
     if (FAILED(hr) || !reflection)
     {
         URHO3D_SAFE_RELEASE(reflection);
@@ -418,17 +426,12 @@ void ShaderVariation::SaveByteCode(const String& binaryShaderName)
     ResourceCache* cache = owner_->GetSubsystem<ResourceCache>();
     FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
 
-    // Filename may or may not be inside the resource system
-    String fullName = binaryShaderName;
-    if (!IsAbsolutePath(fullName))
-    {
-        // If not absolute, use the resource dir of the shader
-        String shaderFileName = cache->GetResourceFileName(owner_->GetName());
-        if (shaderFileName.Empty())
-            return;
-        fullName = shaderFileName.Substring(0, shaderFileName.Find(owner_->GetName())) + binaryShaderName;
-    }
-    String path = GetPath(fullName);
+#if UWP
+    String path = String(SDL_UWP_GetCacheDir()) + "/";
+#else
+    String path = GetPath(cache->GetResourceFileName(owner_->GetName())) + "Cache/";
+#endif
+    String fullName = path + GetFileNameAndExtension(binaryShaderName);
     if (!fileSystem->DirExists(path))
         fileSystem->CreateDir(path);
 

@@ -35,6 +35,7 @@
 #include "../Scene/SceneEvents.h"
 #include "../Scene/SmoothedTransform.h"
 #include "../Scene/UnknownComponent.h"
+#include "Mono.h"
 
 #include "../DebugNew.h"
 
@@ -44,6 +45,7 @@
 
 namespace Urho3D
 {
+
 
 Node::Node(Context* context) :
     Animatable(context),
@@ -211,6 +213,7 @@ bool Node::SaveXML(XMLElement& dest) const
         XMLElement compElem = dest.CreateChild("component");
         if (!component->SaveXML(compElem))
             return false;
+        Mono::Callback(Component_SaveXml, component, &compElem);
     }
 
     // Write child nodes
@@ -1600,6 +1603,7 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool readC
             resolver.AddComponent(compID, newComponent);
             if (!newComponent->LoadXML(compElem))
                 return false;
+            Mono::Callback(Component_LoadXml, newComponent, &compElem);
         }
 
         compElem = compElem.GetNext("component");
@@ -1850,6 +1854,7 @@ void Node::AddComponent(Component* component, unsigned id, CreateMode mode)
 
         scene_->SendEvent(E_COMPONENTADDED, eventData);
     }
+    Mono::Callback(Component_AttachedToNode, component);
 }
 
 unsigned Node::GetNumPersistentChildren() const
@@ -2001,6 +2006,7 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
             if (*i)
             {
                 (*i)->OnNodeSetEnabled(this);
+                Mono::Callback(Component_OnNodeSetEnabled, *i);
                 ++i;
             }
             // If listener has expired, erase from list

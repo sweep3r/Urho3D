@@ -174,9 +174,9 @@ void InitFPU()
 {
     // Make sure FPU is in round-to-nearest, single precision mode
     // This ensures Direct3D and OpenGL behave similarly, and all threads behave similarly
-#if defined(_MSC_VER) && defined(_M_IX86)
+#if defined(_MSC_VER) && defined(_M_IX86) && !defined(UWP)
     _controlfp(_RC_NEAR | _PC_24, _MCW_RC | _MCW_PC);
-#elif defined(__i386__)
+#elif defined(__i386__) && !defined(UWP)
     unsigned control = GetFPUState();
     control &= ~(FPU_CW_PREC_MASK | FPU_CW_ROUND_MASK);
     control |= (FPU_CW_PREC_SINGLE | FPU_CW_ROUND_NEAR);
@@ -201,7 +201,7 @@ void ErrorExit(const String& message, int exitCode)
 
 void OpenConsoleWindow()
 {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(UWP)
     if (consoleOpened)
         return;
 
@@ -216,7 +216,7 @@ void OpenConsoleWindow()
 
 void PrintUnicode(const String& str, bool error)
 {
-#if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
+#if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS) && !defined(UWP)
 #ifdef _WIN32
     // If the output stream has been redirected, use fprintf instead of WriteConsoleW,
     // though it means that proper Unicode output will not work
@@ -247,6 +247,9 @@ void PrintLine(const String& str, bool error)
 {
 #if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
     fprintf(error ? stderr : stdout, "%s\n", str.CString());
+#endif
+#if defined (IOS)
+    SDL_Log (str.CString());
 #endif
 }
 
@@ -334,7 +337,7 @@ String GetConsoleInput()
     // When we are running automated tests, reading the console may block. Just return empty in that case
     return ret;
 #else
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(UWP)
     HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
     HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
     if (input == INVALID_HANDLE_VALUE || output == INVALID_HANDLE_VALUE)
@@ -383,7 +386,7 @@ String GetConsoleInput()
             }
         }
     }
-#elif !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
+#elif !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS) && !defined(UWP)
     int flags = fcntl(STDIN_FILENO, F_GETFL);
     fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
     for (;;)
@@ -542,7 +545,7 @@ String GetLoginName()
     struct passwd *p = getpwuid(getuid());
     if (p != NULL) 
         return p->pw_name;
-#elif defined(_WIN32)
+#elif defined(_WIN32) && !defined(UWP)
     char name[UNLEN + 1];
     DWORD len = UNLEN + 1;
     if (GetUserName(name, &len))
@@ -574,7 +577,7 @@ String GetHostName()
     char buffer[256]; 
     if (gethostname(buffer, 256) == 0) 
         return buffer; 
-#elif defined(_WIN32)
+#elif defined(_WIN32) && !defined(UWP)
     char buffer[MAX_COMPUTERNAME_LENGTH + 1]; 
     DWORD len = MAX_COMPUTERNAME_LENGTH + 1; 
     if (GetComputerName(buffer, &len))
@@ -584,7 +587,7 @@ String GetHostName()
 }
 
 // Disable Windows OS version functionality when compiling mini version for Web, see https://github.com/urho3d/Urho3D/issues/1998
-#if defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO)
+#if defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO) && !defined(UWP)
 using RtlGetVersionPtr = NTSTATUS (WINAPI *)(PRTL_OSVERSIONINFOW);
 
 static void GetOS(RTL_OSVERSIONINFOW *r)
@@ -605,7 +608,7 @@ String GetOSVersion()
     struct utsname u;
     if (uname(&u) == 0)
         return String(u.sysname) + " " + u.release; 
-#elif defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO)
+#elif defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO) && !defined(UWP)
     RTL_OSVERSIONINFOW r;
     GetOS(&r); 
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx

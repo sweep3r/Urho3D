@@ -50,7 +50,7 @@ const int cMaxUDPSendSize = 1400;
 
 std::string Network::GetErrorString(int error)
 {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(UWP)
 	void *lpMsgBuf = 0;
 
 	HRESULT hresult = HRESULT_FROM_WIN32(error);
@@ -128,6 +128,7 @@ void PrintLocalIP()
 	}
 	KNET_LOG(LogInfo, "Host name is %s", ac);
 
+#ifndef UWP
 	struct hostent *phe = gethostbyname(ac);
 	if (phe == 0)
 	{
@@ -141,6 +142,7 @@ void PrintLocalIP()
 		memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
 		KNET_LOG(LogInfo, "Address %d: %s", i, inet_ntoa(addr)); ///\todo inet_ntoa is deprecated! doesn't handle IPv6!
 	}
+#endif
 }
 
 void Network::PrintAddrInfo(const addrinfo *ptr)

@@ -247,6 +247,7 @@ Graphics::Graphics(Context* context_) :
     etcTextureSupport_(false),
     pvrtcTextureSupport_(false),
     hardwareShadowSupport_(false),
+    stereoRendering_(false),
     sRGBSupport_(false),
     sRGBWriteSupport_(false),
     numPrimitives_(0),
@@ -294,7 +295,8 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 
 #if defined(IOS) || defined(TVOS)
     // iOS and tvOS app always take the fullscreen (and with status bar hidden)
-    fullscreen = true;
+    // fullscreen = true;
+    // UrhoSharp: NO! we want it to be displayed in a smaller view!
 #endif
 
     // Make sure monitor index is not bigger than the currently detected monitors
@@ -478,7 +480,8 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
             }
         }
 
-        CreateWindowIcon();
+        if (!externalWindow_)
+            CreateWindowIcon();
 
         if (maximize)
         {
@@ -2443,7 +2446,7 @@ void Graphics::Release(bool clearGPUObjects, bool closeWindow)
         SDL_ShowCursor(SDL_TRUE);
 
         // Do not destroy external window except when shutting down
-        if (!externalWindow_ || clearGPUObjects)
+        if (!externalWindow_ /* || clearGPUObjects */) //UrhoSharp: keep window alive on Exit()
         {
             SDL_DestroyWindow(window_);
             window_ = nullptr;

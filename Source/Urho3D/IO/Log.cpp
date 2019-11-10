@@ -41,6 +41,7 @@ extern "C" void SDL_IOS_LogMessage(const char* message);
 #endif
 
 #include "../DebugNew.h"
+#include "Mono.h"
 
 namespace Urho3D
 {
@@ -81,7 +82,7 @@ Log::~Log()
 
 void Log::Open(const String& fileName)
 {
-#if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
+#if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS) && !defined(UWP)
     if (fileName.Empty())
         return;
     if (logFile_ && logFile_->IsOpen())
@@ -142,6 +143,11 @@ void Log::Write(int level, const String& message)
     {
         WriteRaw(message, false);
         return;
+    }
+
+    if (level == LOG_ERROR)
+    {
+        Mono::Callback(Log_Write, 0, 0, level, stringdup(message.CString()));
     }
 
     // No-op if illegal level

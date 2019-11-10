@@ -63,4 +63,9 @@ URHO3D_EVENT(E_ENDFRAME, EndFrame)
 {
 }
 
+/// CheckForInput event
+URHO3D_EVENT(E_CHECKFORINPUT, CheckForInput)
+{
+}
+
 }

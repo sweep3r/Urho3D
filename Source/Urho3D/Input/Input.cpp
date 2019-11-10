@@ -327,6 +327,7 @@ Input::Input(Context* context) :
     inputScale_(Vector2::ONE),
     windowID_(0),
     toggleFullscreen_(true),
+    enabled_(true),
     mouseVisible_(false),
     lastMouseVisible_(false),
     mouseGrabbed_(false),
@@ -372,6 +373,11 @@ Input::~Input()
 
 void Input::Update()
 {
+#if UWP_HOLO //No SDL input for HoloLens
+    return;
+#endif
+    if (!enabled_) return;
+        
     assert(initialized_);
 
     URHO3D_PROFILE(UpdateInput);
@@ -384,8 +390,10 @@ void Input::Update()
     ResetInputAccumulation();
 
     SDL_Event evt;
-    while (SDL_PollEvent(&evt))
+    while (enabled_ && SDL_PollEvent(&evt))
         HandleSDLEvent(&evt);
+    
+    if (!enabled_) return;
 
     if (suppressNextMouseMove_ && (mouseMove_ != IntVector2::ZERO || mouseMoved))
         UnsuppressMouseMove();
@@ -1178,6 +1186,11 @@ void Input::SetTouchEmulation(bool enable)
 #endif
 }
 
+void Input::SetEnabled(bool enable)
+{
+    enabled_ = enable;
+}
+
 bool Input::RecordGesture()
 {
     // If have no touch devices, fail
@@ -1506,6 +1519,7 @@ void Input::Initialize()
     ResetState();
 
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Input, HandleBeginFrame));
+	SubscribeToEvent(E_CHECKFORINPUT, URHO3D_HANDLER(Input, HandleBeginFrame));
 #ifdef __EMSCRIPTEN__
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Input, HandleEndFrame));
 #endif
@@ -1855,7 +1869,10 @@ void Input::HandleSDLEvent(void* sdlEvent)
         if (eventData[P_CONSUMED].GetBool())
             return;
     }
-
+    
+    if (!enabled_)
+        return;
+    
     switch (evt.type)
     {
     case SDL_KEYDOWN:
@@ -2347,6 +2364,9 @@ void Input::HandleSDLEvent(void* sdlEvent)
 
 void Input::HandleScreenMode(StringHash eventType, VariantMap& eventData)
 {
+#if UWP_HOLO
+    return;
+#endif
     if (!initialized_)
         Initialize();
 

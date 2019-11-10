@@ -301,6 +301,7 @@ View::View(Context* context) :
     farClipZone_(nullptr),
     occlusionBuffer_(nullptr),
     renderTarget_(nullptr),
+    stereo_(false),
     substituteRenderTarget_(nullptr),
     passCommand_(nullptr)
 {
@@ -1466,6 +1467,7 @@ void View::GetLitBatches(Drawable* drawable, LightBatchQueue& lightQueue, BatchQ
 
 void View::ExecuteRenderPathCommands()
 {
+    graphics_->SetStereo(stereo_);
     View* actualView = sourceView_ ? sourceView_ : this;
 
     // If not reusing shadowmaps, render all of them first

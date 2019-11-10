@@ -97,6 +97,7 @@ Engine::Engine(Context* context) :
     timeStep_(0.0f),
     timeStepSmoothing_(2),
     minFps_(10),
+	jumpoutFps_(false),
 #if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
     maxFps_(60),
     maxInactiveFps_(10),
@@ -470,7 +471,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     return true;
 }
 
-void Engine::RunFrame()
+int Engine::RunFrame()
 {
     assert(initialized_);
 
@@ -479,7 +480,7 @@ void Engine::RunFrame()
         exiting_ = true;
 
     if (exiting_)
-        return;
+        return 0;
 
     // Note: there is a minimal performance cost to looking up subsystems (uses a hashmap); if they would be looked up several
     // times per frame it would be better to cache the pointers
@@ -506,6 +507,9 @@ void Engine::RunFrame()
             audio->Stop();
             audioPaused_ = true;
         }
+#ifdef IOS
+        return;
+#endif
     }
     else
     {
@@ -515,14 +519,19 @@ void Engine::RunFrame()
             audio->Play();
             audioPaused_ = false;
         }
-
+#if defined(IOS) || defined(ANDROID)
         Update();
+        Render();
     }
-
+#else
+    }
+    Update();
     Render();
-    ApplyFrameLimit();
+#endif
+    int elapsed = ApplyFrameLimit();
 
     time->EndFrame();
+    return elapsed;
 }
 
 Console* Engine::CreateConsole()
@@ -569,6 +578,8 @@ void Engine::SetMinFps(int fps)
 
 void Engine::SetMaxFps(int fps)
 {
+	if (maxFps_ <= 1) 
+		jumpoutFps_ = true;
     maxFps_ = (unsigned)Max(fps, 0);
 }
 
@@ -721,10 +732,10 @@ void Engine::Render()
     graphics->EndFrame();
 }
 
-void Engine::ApplyFrameLimit()
+int Engine::ApplyFrameLimit()
 {
     if (!initialized_)
-        return;
+        return 0;
 
     unsigned maxFps = maxFps_;
     Input* input = GetSubsystem<Input>();
@@ -747,17 +758,39 @@ void Engine::ApplyFrameLimit()
 
         long long targetMax = 1000000LL / maxFps;
 
+		const unsigned SLEEP_CHUNK_MS = 20;
+		const unsigned MAX_CHUNKS = 5;
+		int chunks = 0;
+		jumpoutFps_ = false;
+
         for (;;)
         {
             elapsed = frameTimer_.GetUSec(false);
-            if (elapsed >= targetMax)
+            if (elapsed >= targetMax || jumpoutFps_)
                 break;
 
             // Sleep if 1 ms or more off the frame limiting goal
             if (targetMax - elapsed >= 1000LL)
             {
-                unsigned sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
-                Time::Sleep(sleepTime);
+				if (maxFps > 1)
+				{
+					unsigned sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
+					Time::Sleep(sleepTime);
+				}
+				else 
+				{
+					// At FPS <=1, check for input every chunk, for a fast way out of the very 
+					// low FPS on mobile. We don't care here if we're a little over the goal.
+					Time::Sleep(SLEEP_CHUNK_MS);
+					if (++chunks > MAX_CHUNKS)
+					{
+						chunks = 0;
+						// CheckForInput event
+						using namespace CheckForInput;
+						VariantMap& eventData = GetEventDataMap();
+						SendEvent(E_CHECKFORINPUT, eventData);
+					}
+				}
             }
         }
     }
@@ -794,15 +827,18 @@ void Engine::ApplyFrameLimit()
     }
     else
         timeStep_ = lastTimeSteps_.Back();
+    return elapsed;
 }
 
 VariantMap Engine::ParseParameters(const Vector<String>& arguments)
 {
     VariantMap ret;
 
-    // Pre-initialize the parameters with environment variable values when they are set
-    if (const char* paths = getenv("URHO3D_PREFIX_PATH"))
-        ret[EP_RESOURCE_PREFIX_PATHS] = paths;
+#ifndef UWP
+	// Pre-initialize the parameters with environment variable values when they are set
+	if (const char* paths = getenv("URHO3D_PREFIX_PATH"))
+		ret[EP_RESOURCE_PREFIX_PATHS] = paths;
+#endif // !UWP
 
     for (unsigned i = 0; i < arguments.Size(); ++i)
     {
@@ -815,6 +851,8 @@ VariantMap Engine::ParseParameters(const Vector<String>& arguments)
                 ret[EP_HEADLESS] = true;
             else if (argument == "nolimit")
                 ret[EP_FRAME_LIMITER] = false;
+            else if (argument == "delayedstart")
+                ret["DelayedStart"] = true;
             else if (argument == "flushgpu")
                 ret[EP_FLUSH_GPU] = true;
             else if (argument == "gl2")

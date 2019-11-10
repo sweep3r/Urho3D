@@ -44,6 +44,7 @@
 #include "../Scene/ValueAnimation.h"
 
 #include "../DebugNew.h"
+#include "Mono.h"
 
 namespace Urho3D
 {
@@ -1047,6 +1048,7 @@ void Scene::ComponentAdded(Component* component)
     }
 
     component->OnSceneSet(this);
+    Mono::Callback(Component_OnSceneSet, component, this);
 }
 
 void Scene::ComponentRemoved(Component* component)
@@ -1062,6 +1064,7 @@ void Scene::ComponentRemoved(Component* component)
 
     component->SetID(0);
     component->OnSceneSet(nullptr);
+    Mono::Callback(Component_OnSceneSet, component);
 }
 
 void Scene::SetVarNamesAttr(const String& value)

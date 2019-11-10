@@ -122,6 +122,13 @@ int SDL_WinRTInitNonXAMLApp(int (*mainFunction)(int, char **))
     return 0;
 }
 
+SDL_WinRTApp^ fakeApp;
+extern "C" __declspec(dllexport) void SDL_WINRT_SubscribeToWindowEvents()
+{
+	fakeApp = ref new SDL_WinRTApp();
+	fakeApp->SetWindow(CoreWindow::GetForCurrentThread());
+}
+
 static void WINRT_SetDisplayOrientationsPreference(void *userdata, const char *name, const char *oldValue, const char *newValue)
 {
     SDL_assert(SDL_strcmp(name, SDL_HINT_ORIENTATIONS) == 0);
@@ -186,6 +193,8 @@ static void WINRT_SetDisplayOrientationsPreference(void *userdata, const char *n
 static void
 WINRT_ProcessWindowSizeChange() // TODO: Pass an SDL_Window-identifying thing into WINRT_ProcessWindowSizeChange()
 {
+	return; //handled in the C# code (see UrhoSurface)
+
     CoreWindow ^ coreWindow = CoreWindow::GetForCurrentThread();
     if (coreWindow) {
         if (WINRT_GlobalSDLWindow) {
@@ -403,7 +412,7 @@ void SDL_WinRTApp::SetWindow(CoreWindow^ window)
     // TODO, WinRT: see if an app's default orientation can be found out via WinRT API(s), then set the initial value of SDL_HINT_ORIENTATIONS accordingly.
     SDL_AddHintCallback(SDL_HINT_ORIENTATIONS, WINRT_SetDisplayOrientationsPreference, NULL);
 
-#if (WINAPI_FAMILY == WINAPI_FAMILY_APP) && (NTDDI_VERSION < NTDDI_WIN10)  // for Windows 8/8.1/RT apps... (and not Phone apps)
+#if (WINAPI_FAMILY == WINAPI_FAMILY_APP) && (NTDDI_VERSION < NTDDI_WIN10) && !defined(UWP_HOLO)  // for Windows 8/8.1/RT apps... (and not Phone apps)
     // Make sure we know when a user has opened the app's settings pane.
     // This is needed in order to display a privacy policy, which needs
     // to be done for network-enabled apps, as per Windows Store requirements.
@@ -496,7 +505,7 @@ void SDL_WinRTApp::Uninitialize()
 {
 }
 
-#if (WINAPI_FAMILY == WINAPI_FAMILY_APP) && (NTDDI_VERSION < NTDDI_WIN10)
+#if (WINAPI_FAMILY == WINAPI_FAMILY_APP) && (NTDDI_VERSION < NTDDI_WIN10) && !defined(UWP_HOLO)
 void SDL_WinRTApp::OnSettingsPaneCommandsRequested(
     Windows::UI::ApplicationSettings::SettingsPane ^p,
     Windows::UI::ApplicationSettings::SettingsPaneCommandsRequestedEventArgs ^args)
@@ -827,7 +836,8 @@ static void WINRT_OnBackButtonPressed(BackButtonEventArgs ^ args)
     }
 }
 
-#if NTDDI_VERSION == NTDDI_WIN10
+//#if NTDDI_VERSION == NTDDI_WIN10
+#if WINAPI_FAMILY != WINAPI_FAMILY_PHONE_APP
 void SDL_WinRTApp::OnBackButtonPressed(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args)
 
 {

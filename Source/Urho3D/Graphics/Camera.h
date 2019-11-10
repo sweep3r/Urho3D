@@ -62,6 +62,8 @@ public:
     void SetFarClip(float farClip);
     /// Set vertical field of view in degrees.
     void SetFov(float fov);
+    /// Set skew
+    void SetSkew(float skew);
     /// Set orthographic mode view uniform size.
     void SetOrthoSize(float orthoSize);
     /// Set orthographic mode view non-uniform size. Disables the auto aspect ratio -mode.
@@ -105,6 +107,9 @@ public:
 
     /// Return near clip distance. If a custom projection matrix is in use, is calculated from it instead of the value assigned with SetNearClip().
     float GetNearClip() const;
+
+    /// Return skew.
+    float GetSkew() const { return skew_; }
 
     /// Return vertical field of view in degrees.
     float GetFov() const { return fov_; }
@@ -244,6 +249,8 @@ private:
     float farClip_;
     /// Field of view.
     float fov_;
+    /// Skew
+    float skew_;
     /// Orthographic view size.
     float orthoSize_;
     /// Aspect ratio.

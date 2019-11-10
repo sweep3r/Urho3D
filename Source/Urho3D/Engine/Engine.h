@@ -47,7 +47,7 @@ public:
     /// Reinitialize resource cache subsystem using parameters given. Implicitly called by Initialize. Return true if successful.
     bool InitializeResourceCache(const VariantMap& parameters, bool removeOld = true);
     /// Run one frame.
-    void RunFrame();
+    int RunFrame();
     /// Create the console and return it. May return null if engine configuration does not allow creation (headless mode.)
     Console* CreateConsole();
     /// Create the debug hud.
@@ -110,7 +110,7 @@ public:
     /// Render after frame update.
     void Render();
     /// Get the timestep for the next frame and sleep for frame limiting if necessary.
-    void ApplyFrameLimit();
+    int ApplyFrameLimit();
 
     /// Parse the engine startup parameters map from command line arguments.
     static VariantMap ParseParameters(const Vector<String>& arguments);
@@ -140,6 +140,8 @@ private:
     unsigned maxFps_;
     /// Maximum frames per second when the application does not have input focus.
     unsigned maxInactiveFps_;
+    /// Jump out of the FPS wait loop.
+    bool jumpoutFps_;
     /// Pause when minimized flag.
     bool pauseMinimized_;
 #ifdef URHO3D_TESTING

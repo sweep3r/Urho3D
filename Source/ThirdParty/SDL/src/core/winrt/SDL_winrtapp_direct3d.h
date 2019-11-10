@@ -43,7 +43,7 @@ protected:
 
     // Event Handlers.
 
-#if (WINAPI_FAMILY == WINAPI_FAMILY_APP) && (NTDDI_VERSION < NTDDI_WIN10)  // for Windows 8/8.1/RT apps... (and not Phone apps)
+#if (WINAPI_FAMILY == WINAPI_FAMILY_APP) && (NTDDI_VERSION < NTDDI_WIN10) && !defined(UWP_HOLO)  // for Windows 8/8.1/RT apps... (and not Phone apps)
     void OnSettingsPaneCommandsRequested(
         Windows::UI::ApplicationSettings::SettingsPane ^p,
         Windows::UI::ApplicationSettings::SettingsPaneCommandsRequestedEventArgs ^args);
@@ -75,13 +75,10 @@ protected:
     void OnCharacterReceived(Windows::UI::Core::CoreWindow^ sender, Windows::UI::Core::CharacterReceivedEventArgs^ args);
 
 #if NTDDI_VERSION >= NTDDI_WIN10
+    void OnGamepadAdded(Platform::Object ^sender, Windows::Gaming::Input::Gamepad ^gamepad);
     void OnBackButtonPressed(Platform::Object^ sender, Windows::UI::Core::BackRequestedEventArgs^ args);
 #elif WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
     void OnBackButtonPressed(Platform::Object^ sender, Windows::Phone::UI::Input::BackPressedEventArgs^ args);
-#endif
-
-#if NTDDI_VERSION >= NTDDI_WIN10
-    void OnGamepadAdded(Platform::Object ^sender, Windows::Gaming::Input::Gamepad ^gamepad);
 #endif
 
 private:

@@ -77,11 +77,11 @@ int Application::Run()
         }
 
         Start();
-        if (exitCode_)
+        if (exitCode_ || Engine::GetParameter(engineParameters_, "DelayedStart", false).GetBool())
             return exitCode_;
 
         // Platforms other than iOS/tvOS and Emscripten run a blocking main loop
-#if !defined(IOS) && !defined(TVOS) && !defined(__EMSCRIPTEN__)
+#if !defined(IOS) && !defined(TVOS) && !defined(__EMSCRIPTEN__) && !defined(UWP)
         while (!engine_->IsExiting())
             engine_->RunFrame();
 

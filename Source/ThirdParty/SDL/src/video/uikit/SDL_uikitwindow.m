@@ -157,7 +157,7 @@ UIKit_CreateWindow(_THIS, SDL_Window *window)
         SDL_assert(_this->windows == window);
 
         /* We currently only handle a single window per display on iOS */
-        if (window->next != NULL) {
+        if (window->next != NULL && urhoPlaceholderWindow == NULL) {
             return SDL_SetError("Only one window allowed per display.");
         }
 
@@ -202,8 +202,14 @@ UIKit_CreateWindow(_THIS, SDL_Window *window)
 
         /* ignore the size user requested, and make a fullscreen window */
         /* !!! FIXME: can we have a smaller view? */
-        UIWindow *uiwindow = [[SDL_uikitwindow alloc] initWithFrame:data.uiscreen.bounds];
-
+        //UIWindow *uiwindow = [[SDL_uikitwindow alloc] initWithFrame:data.uiscreen.bounds];
+        UIWindow *uiwindow;
+        if (!urhoPlaceholderWindow){
+            uiwindow = [SDL_uikitwindow alloc];
+            uiwindow = [uiwindow initWithFrame:[data.uiscreen bounds]];
+        } else {
+            uiwindow = urhoPlaceholderWindow;
+        }
         /* put the window on an external display if appropriate. */
         if (data.uiscreen != [UIScreen mainScreen]) {
             [uiwindow setScreen:data.uiscreen];
@@ -300,6 +306,17 @@ UIKit_SetWindowFullscreen(_THIS, SDL_Window * window, SDL_VideoDisplay * display
 {
     @autoreleasepool {
         UIKit_UpdateWindowBorder(_this, window);
+    }
+}
+
+void
+UIKit_StopRenderLoop(SDL_Window * window)
+{
+    @autoreleasepool {
+        if (window->driverdata != NULL) {
+            SDL_WindowData *data = (SDL_WindowData *) CFBridgingRelease(window->driverdata);
+            [data.viewcontroller stopAnimation];
+        }
     }
 }
 
@@ -455,3 +472,10 @@ SDL_iPhoneSetAnimationCallback(SDL_Window * window, int interval, void (*callbac
 #endif /* SDL_VIDEO_DRIVER_UIKIT */
 
 /* vi: set ts=4 sw=4 expandtab: */
+
+// UrhoSharp:
+void SDL_SetExternalViewPlaceholder(UIView* view, UIWindow* window){
+    urhoPlaceholderView = view;
+    urhoPlaceholderWindow = window;
+    //TODO: cleanup?
+}

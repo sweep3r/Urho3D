@@ -22,6 +22,8 @@
 
 // Modified by cosmy1, Yao Wei Tjong & Lasse Oorni for Urho3D
 
+#if !defined(UWP)
+
 #if defined(_WIN32)
 #if !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS /* Disable deprecation warning in VS2005 */
@@ -10352,3 +10354,5 @@ struct mg_context *mg_start(const struct mg_callbacks *callbacks,
 
 	return ctx;
 }
+
+#endif
