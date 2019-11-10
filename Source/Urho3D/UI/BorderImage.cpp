@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,14 +41,13 @@ BorderImage::BorderImage(Context* context) :
     border_(IntRect::ZERO),
     imageBorder_(IntRect::ZERO),
     hoverOffset_(IntVector2::ZERO),
+    disabledOffset_(IntVector2::ZERO),
     blendMode_(BLEND_REPLACE),
     tiled_(false)
 {
 }
 
-BorderImage::~BorderImage()
-{
-}
+BorderImage::~BorderImage() = default;
 
 void BorderImage::RegisterObject(Context* context)
 {
@@ -61,13 +60,19 @@ void BorderImage::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Border", GetBorder, SetBorder, IntRect, IntRect::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Image Border", GetImageBorder, SetImageBorder, IntRect, IntRect::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Hover Image Offset", GetHoverOffset, SetHoverOffset, IntVector2, IntVector2::ZERO, AM_FILE);
+    URHO3D_ACCESSOR_ATTRIBUTE("Disabled Image Offset", GetDisabledOffset, SetDisabledOffset, IntVector2, IntVector2::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Tiled", IsTiled, SetTiled, bool, false, AM_FILE);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Blend Mode", GetBlendMode, SetBlendMode, BlendMode, blendModeNames, 0, AM_FILE);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()),
+        AM_FILE);
 }
 
 void BorderImage::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor)
 {
-    GetBatches(batches, vertexData, currentScissor, hovering_ || selected_ || HasFocus() ? hoverOffset_ : IntVector2::ZERO);
+    if (enabled_)
+        GetBatches(batches, vertexData, currentScissor, (hovering_ || selected_ || HasFocus()) ? hoverOffset_ : IntVector2::ZERO);
+    else
+        GetBatches(batches, vertexData, currentScissor, disabledOffset_);
 }
 
 void BorderImage::SetTexture(Texture* texture)
@@ -115,6 +120,16 @@ void BorderImage::SetHoverOffset(int x, int y)
     hoverOffset_ = IntVector2(x, y);
 }
 
+void BorderImage::SetDisabledOffset(const IntVector2& offset)
+{
+    disabledOffset_ = offset;
+}
+
+void BorderImage::SetDisabledOffset(int x, int y)
+{
+    disabledOffset_ = IntVector2(x, y);
+}
+
 void BorderImage::SetBlendMode(BlendMode mode)
 {
     blendMode_ = mode;
@@ -129,12 +144,15 @@ void BorderImage::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vert
     const IntVector2& offset)
 {
     bool allOpaque = true;
-    if (GetDerivedOpacity() < 1.0f || color_[C_TOPLEFT].a_ < 1.0f || color_[C_TOPRIGHT].a_ < 1.0f ||
-        color_[C_BOTTOMLEFT].a_ < 1.0f || color_[C_BOTTOMRIGHT].a_ < 1.0f)
+    if (GetDerivedOpacity() < 1.0f || colors_[C_TOPLEFT].a_ < 1.0f || colors_[C_TOPRIGHT].a_ < 1.0f ||
+        colors_[C_BOTTOMLEFT].a_ < 1.0f || colors_[C_BOTTOMRIGHT].a_ < 1.0f)
         allOpaque = false;
 
     UIBatch
         batch(this, blendMode_ == BLEND_REPLACE && !allOpaque ? BLEND_ALPHA : blendMode_, currentScissor, texture_, &vertexData);
+
+    if (material_)
+        batch.custom_material_ = material_;
 
     // Calculate size of the inner rect, and texture dimensions of the inner rect
     const IntRect& uvBorder = (imageBorder_ == IntRect::ZERO) ? border_ : imageBorder_;
@@ -201,13 +219,34 @@ void BorderImage::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vert
 
 void BorderImage::SetTextureAttr(const ResourceRef& value)
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
     SetTexture(cache->GetResource<Texture2D>(value.name_));
 }
 
 ResourceRef BorderImage::GetTextureAttr() const
 {
     return GetResourceRef(texture_, Texture2D::GetTypeStatic());
+}
+
+void BorderImage::SetMaterialAttr(const ResourceRef& value)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    SetMaterial(cache->GetResource<Material>(value.name_));
+}
+
+ResourceRef BorderImage::GetMaterialAttr() const
+{
+    return GetResourceRef(material_, Material::GetTypeStatic());
+}
+
+void BorderImage::SetMaterial(Material* material)
+{
+    material_ = material;
+}
+
+Material* BorderImage::GetMaterial() const
+{
+    return material_;
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -125,15 +125,21 @@ static void RegisterUIElement(asIScriptEngine* engine)
     engine->RegisterEnumValue("TraversalMode", "TM_BREADTH_FIRST", TM_BREADTH_FIRST);
     engine->RegisterEnumValue("TraversalMode", "TM_DEPTH_FIRST", TM_DEPTH_FIRST);
 
-    engine->RegisterGlobalProperty("const uint DD_DISABLED", (void*)&DD_DISABLED);
-    engine->RegisterGlobalProperty("const uint DD_SOURCE", (void*)&DD_SOURCE);
-    engine->RegisterGlobalProperty("const uint DD_TARGET", (void*)&DD_TARGET);
-    engine->RegisterGlobalProperty("const uint DD_SOURCE_AND_TARGET", (void*)&DD_SOURCE_AND_TARGET);
+    engine->RegisterEnum("DragAndDropMode");
+    engine->RegisterEnumValue("DragAndDropMode", "DD_DISABLED", DD_DISABLED);
+    engine->RegisterEnumValue("DragAndDropMode", "DD_SOURCE", DD_SOURCE);
+    engine->RegisterEnumValue("DragAndDropMode", "DD_TARGET", DD_TARGET);
+    engine->RegisterEnumValue("DragAndDropMode", "DD_SOURCE_AND_TARGET", DD_SOURCE_AND_TARGET);
 
     RegisterUIElement<UIElement>(engine, "UIElement");
 
     // Register TouchState touchedElement property now
     engine->RegisterObjectMethod("TouchState", "UIElement@+ get_touchedElement()", asMETHOD(TouchState, GetTouchedElement), asCALL_THISCALL);
+}
+
+static void RegisterUISelectable(asIScriptEngine* engine)
+{
+    RegisterUISelectable<UISelectable>(engine, "UISelectable");
 }
 
 static void RegisterBorderImage(asIScriptEngine* engine)
@@ -384,7 +390,7 @@ static void RegisterText(asIScriptEngine* engine)
     engine->RegisterEnumValue("TextEffect", "TE_SHADOW", TE_SHADOW);
     engine->RegisterEnumValue("TextEffect", "TE_STROKE", TE_STROKE);
 
-    RegisterUIElement<Text>(engine, "Text");
+    RegisterUISelectable<Text>(engine, "Text");
     engine->RegisterObjectMethod("Text", "bool SetFont(const String&in, float)", asMETHODPR(Text, SetFont, (const String&, float), bool), asCALL_THISCALL);
     engine->RegisterObjectMethod("Text", "bool SetFont(Font@+, float)", asMETHODPR(Text, SetFont, (Font*, float), bool), asCALL_THISCALL);
     engine->RegisterObjectMethod("Text", "void SetSelection(uint, uint arg1 = M_MAX_UNSIGNED)", asMETHOD(Text, SetSelection), asCALL_THISCALL);
@@ -404,10 +410,6 @@ static void RegisterText(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Text", "bool get_autoLocalizable() const", asMETHOD(Text, GetAutoLocalizable), asCALL_THISCALL);
     engine->RegisterObjectMethod("Text", "uint get_selectionStart() const", asMETHOD(Text, GetSelectionStart), asCALL_THISCALL);
     engine->RegisterObjectMethod("Text", "uint get_selectionLength() const", asMETHOD(Text, GetSelectionLength), asCALL_THISCALL);
-    engine->RegisterObjectMethod("Text", "void set_selectionColor(const Color&in)", asMETHOD(Text, SetSelectionColor), asCALL_THISCALL);
-    engine->RegisterObjectMethod("Text", "const Color& get_selectionColor() const", asMETHOD(Text, GetSelectionColor), asCALL_THISCALL);
-    engine->RegisterObjectMethod("Text", "void set_hoverColor(const Color&in)", asMETHOD(Text, SetHoverColor), asCALL_THISCALL);
-    engine->RegisterObjectMethod("Text", "const Color& get_hoverColor() const", asMETHOD(Text, GetHoverColor), asCALL_THISCALL);
     engine->RegisterObjectMethod("Text", "void set_textEffect(TextEffect)", asMETHOD(Text, SetTextEffect), asCALL_THISCALL);
     engine->RegisterObjectMethod("Text", "TextEffect get_textEffect() const", asMETHOD(Text, GetTextEffect), asCALL_THISCALL);
     engine->RegisterObjectMethod("Text", "void set_effectShadowOffset(const IntVector2&in)", asMETHOD(Text, SetEffectShadowOffset), asCALL_THISCALL);
@@ -652,6 +654,8 @@ static void RegisterFileSelector(asIScriptEngine* engine)
 static void RegisterToolTip(asIScriptEngine* engine)
 {
     RegisterUIElement<ToolTip>(engine, "ToolTip");
+    engine->RegisterObjectMethod("ToolTip", "void Reset()", asMETHOD(ToolTip, Reset), asCALL_THISCALL);
+    engine->RegisterObjectMethod("ToolTip", "void add_altTarget(UIElement@+)", asMETHOD(ToolTip, AddAltTarget), asCALL_THISCALL);
     engine->RegisterObjectMethod("ToolTip", "void set_delay(float)", asMETHOD(ToolTip, SetDelay), asCALL_THISCALL);
     engine->RegisterObjectMethod("ToolTip", "float get_delay() const", asMETHOD(ToolTip, GetDelay), asCALL_THISCALL);
 }
@@ -778,6 +782,8 @@ static void RegisterUI(asIScriptEngine* engine)
     engine->RegisterObjectMethod("UI", "const String& get_clipBoardText() const", asMETHOD(UI, GetClipboardText), asCALL_THISCALL);
     engine->RegisterObjectMethod("UI", "void set_doubleClickInterval(float)", asMETHOD(UI, SetDoubleClickInterval), asCALL_THISCALL);
     engine->RegisterObjectMethod("UI", "float get_doubleClickInterval() const", asMETHOD(UI, GetDoubleClickInterval), asCALL_THISCALL);
+    engine->RegisterObjectMethod("UI", "void set_maxDoubleClickDistance(float)", asMETHOD(UI, SetMaxDoubleClickDistance), asCALL_THISCALL);
+    engine->RegisterObjectMethod("UI", "float get_maxDoubleClickDistance() const", asMETHOD(UI, GetMaxDoubleClickDistance), asCALL_THISCALL);
     engine->RegisterObjectMethod("UI", "void set_dragBeginInterval(float)", asMETHOD(UI, SetDragBeginInterval), asCALL_THISCALL);
     engine->RegisterObjectMethod("UI", "float get_dragBeginInterval() const", asMETHOD(UI, GetDragBeginInterval), asCALL_THISCALL);
     engine->RegisterObjectMethod("UI", "void set_dragBeginDistance(int)", asMETHOD(UI, SetDragBeginDistance), asCALL_THISCALL);
@@ -821,6 +827,7 @@ void RegisterUIAPI(asIScriptEngine* engine)
 {
     RegisterFont(engine);
     RegisterUIElement(engine);
+    RegisterUISelectable(engine);
     RegisterBorderImage(engine);
     RegisterSprite(engine);
     RegisterButton(engine);

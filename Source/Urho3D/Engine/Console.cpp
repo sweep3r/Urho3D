@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Base/Algorithm.h"
 #include "../Core/CoreEvents.h"
 #include "../Engine/Console.h"
 #include "../Engine/EngineEvents.h"
@@ -50,6 +51,7 @@ static const int DEFAULT_HISTORY_SIZE = 16;
 
 const char* logStyles[] =
 {
+    "ConsoleTraceText",
     "ConsoleDebugText",
     "ConsoleInfoText",
     "ConsoleWarningText",
@@ -66,7 +68,7 @@ Console::Console(Context* context) :
     historyOrAutoCompleteChange_(false),
     printing_(false)
 {
-    UI* ui = GetSubsystem<UI>();
+    auto* ui = GetSubsystem<UI>();
     UIElement* uiRoot = ui->GetRoot();
 
     // By default prevent the automatic showing of the screen keyboard
@@ -138,8 +140,8 @@ void Console::SetDefaultStyle(XMLFile* style)
 
 void Console::SetVisible(bool enable)
 {
-    Input* input = GetSubsystem<Input>();
-    UI* ui = GetSubsystem<UI>();
+    auto* input = GetSubsystem<Input>();
+    auto* ui = GetSubsystem<UI>();
     Cursor* cursor = ui->GetCursor();
 
     background_->SetVisible(enable);
@@ -206,7 +208,7 @@ void Console::SetNumBufferedRows(unsigned rows)
         // We have less, add more rows at the top
         for (int i = 0; i > delta; --i)
         {
-            Text* text = new Text(context_);
+            auto* text = new Text(context_);
             // If style is already set, apply here to ensure proper height of the console when
             // amount of rows is changed
             if (background_->GetDefaultStyle())
@@ -328,7 +330,7 @@ bool Console::PopulateInterpreter()
         const String& name = names[i];
         if (name == commandInterpreter_)
             selection = i;
-        Text* text = new Text(context_);
+        auto* text = new Text(context_);
         text->SetStyle("ConsoleText");
         text->SetText(name);
         interpreters_->AddItem(text);
@@ -549,7 +551,7 @@ void Console::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
     // Ensure UI-elements are not detached
     if (!background_->GetParent())
     {
-        UI* ui = GetSubsystem<UI>();
+        auto* ui = GetSubsystem<UI>();
         UIElement* uiRoot = ui->GetRoot();
         uiRoot->AddChild(background_);
         uiRoot->AddChild(closeButton_);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,9 @@
 
 #include "../Math/MathDefs.h"
 #include "../Math/StringHash.h"
+#include "../Container/HashMap.h"
+#include "../Core/StringHashRegister.h"
+#include "../IO/Log.h"
 
 #include <cstdio>
 
@@ -32,16 +35,37 @@
 namespace Urho3D
 {
 
-const StringHash StringHash::ZERO;
+#ifdef URHO3D_HASH_DEBUG
 
-StringHash::StringHash(const char* str) :
-    value_(Calculate(str))
+// Expose map to let Visual Studio debugger access it if Urho3D is linked statically.
+const StringMap* hashReverseMap = nullptr;
+
+// Hide static global variables in functions to ensure initialization order.
+static StringHashRegister& GetGlobalStringHashRegister()
 {
+    static StringHashRegister stringHashRegister(true /*thread safe*/ );
+    hashReverseMap = &stringHashRegister.GetInternalMap();
+    return stringHashRegister;
 }
 
-StringHash::StringHash(const String& str) :
+#endif
+
+const StringHash StringHash::ZERO;
+
+StringHash::StringHash(const char* str) noexcept :
+    value_(Calculate(str))
+{
+#ifdef URHO3D_HASH_DEBUG
+    Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str);
+#endif
+}
+
+StringHash::StringHash(const String& str) noexcept :
     value_(Calculate(str.CString()))
 {
+#ifdef URHO3D_HASH_DEBUG
+    Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str.CString());
+#endif
 }
 
 unsigned StringHash::Calculate(const char* str, unsigned hash)
@@ -51,13 +75,19 @@ unsigned StringHash::Calculate(const char* str, unsigned hash)
 
     while (*str)
     {
-        // Perform the actual hashing as case-insensitive
-        char c = *str;
-        hash = SDBMHash(hash, (unsigned char)tolower(c));
-        ++str;
+        hash = SDBMHash(hash, (unsigned char)*str++);
     }
 
     return hash;
+}
+
+StringHashRegister* StringHash::GetGlobalStringHashRegister()
+{
+#ifdef URHO3D_HASH_DEBUG
+    return &Urho3D::GetGlobalStringHashRegister();
+#else
+    return nullptr;
+#endif
 }
 
 String StringHash::ToString() const
@@ -65,6 +95,15 @@ String StringHash::ToString() const
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%08X", value_);
     return String(tempBuffer);
+}
+
+String StringHash::Reverse() const
+{
+#ifdef URHO3D_HASH_DEBUG
+    return Urho3D::GetGlobalStringHashRegister().GetStringCopy(*this);
+#else
+    return String::EMPTY;
+#endif
 }
 
 }

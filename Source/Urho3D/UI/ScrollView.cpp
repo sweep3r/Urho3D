@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -87,9 +87,7 @@ ScrollView::ScrollView(Context* context) :
 
 }
 
-ScrollView::~ScrollView()
-{
-}
+ScrollView::~ScrollView() = default;
 
 void ScrollView::RegisterObject(Context* context)
 {
@@ -188,7 +186,7 @@ void ScrollView::ApplyAttributes()
     SetViewPosition(viewPositionAttr_);
 }
 
-void ScrollView::OnWheel(int delta, int buttons, int qualifiers)
+void ScrollView::OnWheel(int delta, MouseButtonFlags buttons, QualifierFlags qualifiers)
 {
     if (delta > 0)
         verticalScrollBar_->StepBack();
@@ -196,7 +194,7 @@ void ScrollView::OnWheel(int delta, int buttons, int qualifiers)
         verticalScrollBar_->StepForward();
 }
 
-void ScrollView::OnKey(int key, int buttons, int qualifiers)
+void ScrollView::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifiers)
 {
     switch (key)
     {
@@ -558,8 +556,8 @@ void ScrollView::HandleTouchMove(StringHash eventType, VariantMap& eventData)
     {
         scrollTouchDown_ = true;
         // Take new scrolling speed if it's faster than the current accumulated value
-        float dX = (float)-eventData[P_DX].GetInt();
-        float dY = (float)-eventData[P_DY].GetInt();
+        auto dX = (float)-eventData[P_DX].GetInt();
+        auto dY = (float)-eventData[P_DY].GetInt();
 
         if (Abs(dX) > Abs(touchScrollSpeed_.x_))
             touchScrollSpeed_.x_ = dX;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../Core/ProcessUtils.h"
 #include "../Core/Thread.h"
 #include "../IO/Log.h"
 
@@ -39,9 +40,7 @@ TypeInfo::TypeInfo(const char* typeName, const TypeInfo* baseTypeInfo) :
 {
 }
 
-TypeInfo::~TypeInfo()
-{
-}
+TypeInfo::~TypeInfo() = default;
 
 bool TypeInfo::IsTypeOf(StringHash type) const
 {
@@ -531,24 +530,10 @@ void Object::RemoveEventSender(Object* sender)
     }
 }
 
-
-Urho3D::StringHash EventNameRegistrar::RegisterEventName(const char* eventName)
+StringHashRegister& GetEventNameRegister()
 {
-    StringHash id(eventName);
-    GetEventNameMap()[id] = eventName;
-    return id;
-}
-
-const String& EventNameRegistrar::GetEventName(StringHash eventID)
-{
-    HashMap<StringHash, String>::ConstIterator it = GetEventNameMap().Find(eventID);
-    return  it != GetEventNameMap().End() ? it->second_ : String::EMPTY ;
-}
-
-HashMap<StringHash, String>& EventNameRegistrar::GetEventNameMap()
-{
-    static HashMap<StringHash, String> eventNames_;
-    return eventNames_;
+    static StringHashRegister eventNameRegister(false /*non thread safe*/);
+    return eventNameRegister;
 }
 
 }

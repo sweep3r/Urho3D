@@ -22,7 +22,7 @@
 # Modified by Yao Wei Tjong for Urho3D, the modified portion is licensed under below license
 
 #
-# Copyright (c) 2008-2017 the Urho3D project.
+# Copyright (c) 2008-2019 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -196,6 +196,37 @@ endmacro()
 # Requires:
 # - n/a
 # Optional:
+# - JACK_SHARED opt
+# - HAVE_DLOPEN opt
+macro(CheckJACK)
+  if(JACK)
+    # Urho3D - bug fix - do not use pkg-config tool for detection as it only works for host environment and not for rooted environment when cross-compiling
+    find_package (Jack)
+    if(JACK_FOUND)
+      include_directories (SYSTEM ${JACK_INCLUDE_DIRS})
+      set(HAVE_JACK TRUE)
+      file(GLOB JACK_SOURCES ${SDL2_SOURCE_DIR}/src/audio/jack/*.c)
+      set(SOURCE_FILES ${SOURCE_FILES} ${JACK_SOURCES})
+      set(SDL_AUDIO_DRIVER_JACK 1)
+      if(JACK_SHARED)
+        if(NOT HAVE_DLOPEN)
+          message_warn("You must have SDL_LoadObject() support for dynamic JACK audio loading")
+        else()
+          get_soname (JACK_LIB_SONAME JACK_LIBRARIES)
+          set(SDL_AUDIO_DRIVER_JACK_DYNAMIC "\"${JACK_LIB_SONAME}\"")
+          set(HAVE_JACK_SHARED TRUE)
+        endif()
+      else()
+        list (APPEND EXTRA_LIBS jack)
+      endif()
+      set(HAVE_SDL_AUDIO TRUE)
+    endif()
+  endif()
+endmacro()
+
+# Requires:
+# - PkgCheckModules
+# Optional:
 # - ESD_SHARED opt
 # - HAVE_DLOPEN opt
 macro(CheckESD)
@@ -349,6 +380,33 @@ macro(CheckFusionSound)
 endmacro()
 
 # Requires:
+# - LIBSAMPLERATE
+# Optional:
+# - LIBSAMPLERATE_SHARED opt
+# - HAVE_DLOPEN opt
+macro(CheckLibSampleRate)
+  if(LIBSAMPLERATE)
+    # Urho3D - use custom CMake module to find the audio driver like the rest for consistency sake
+    find_package (SecretRabbitCode)
+    if(SECRETRABBITCODE_FOUND)
+      include_directories (SYSTEM ${SECRETRABBITCODE_INCLUDE_DIRS})
+      set (HAVE_LIBSAMPLERATE_H TRUE)
+      if(LIBSAMPLERATE_SHARED)
+        if(NOT HAVE_DLOPEN)
+          message_warn("You must have SDL_LoadObject() support for dynamic libsamplerate loading")
+        else()
+          get_soname (SAMPLERATE_LIB_SONAME SECRETRABBITCODE_LIBRARIES)
+          set(SDL_LIBSAMPLERATE_DYNAMIC "\"${SAMPLERATE_LIB_SONAME}\"")
+          set(HAVE_LIBSAMPLERATE_SHARED TRUE)
+        endif()
+      else()
+        list (APPEND EXTRA_LIBS samplerate)
+      endif()
+    endif()
+  endif()
+endmacro()
+
+# Requires:
 # - n/a
 # Optional:
 # - X11_SHARED opt
@@ -364,7 +422,7 @@ macro(CheckX11)
       get_soname (${UPCASE_NAME}_LIB_SONAME ${UPCASE_NAME}_LIB)
     endforeach ()
 
-    # Urho3D - commented out setting of X_CFLAGS based on the search result for X11/Xlib.h using the default search path (if it is found then it is in default path anyway so no point to add it into compiler header search path again)
+    # Urho3D - commented out setting of EXTRA_CFLAGS based on the search result for X11/Xlib.h using the default search path (if it is found then it is in default path anyway so no point to add it into compiler header search path again)
     # Urho3D - add check for Xdbe extension
 
     check_include_file(X11/Xcursor/Xcursor.h HAVE_XCURSOR_H)
@@ -408,7 +466,7 @@ macro(CheckX11)
         endif()
         if(NOT HAVE_SHMAT)
           add_definitions(-DNO_SHARED_MEMORY)
-          set(X_CFLAGS "${X_CFLAGS} -DNO_SHARED_MEMORY")
+          list(APPEND EXTRA_CFLAGS "-DNO_SHARED_MEMORY")
         endif()
       endif()
 
@@ -427,8 +485,6 @@ macro(CheckX11)
           list (APPEND EXTRA_LIBS X11 Xext)
         endif()
       endif()
-
-      set(SDL_CFLAGS "${SDL_CFLAGS} ${X_CFLAGS}")
 
       set(CMAKE_REQUIRED_LIBRARIES ${X11_LIB} ${X11_LIB})
       check_c_source_compiles("
@@ -544,42 +600,6 @@ macro(CheckX11)
   endif()
 endmacro()
 
-# Requires:
-# - EGL
-# Optional:
-# - MIR_SHARED opt
-# - HAVE_DLOPEN opt
-macro(CheckMir)
-    if(VIDEO_MIR)
-        # Urho3D - bug fix - do not use pkg-config tool for detection as it only works for host environment and not for rooted environment when cross-compiling
-        find_package (Mir)
-        if (MIR_FOUND)
-            include_directories (SYSTEM ${MIR_INCLUDE_DIRS})
-            set(HAVE_VIDEO_MIR TRUE)
-            set(HAVE_SDL_VIDEO TRUE)
-
-            file(GLOB MIR_SOURCES ${SDL2_SOURCE_DIR}/src/video/mir/*.c)
-            set(SOURCE_FILES ${SOURCE_FILES} ${MIR_SOURCES})
-            set(SDL_VIDEO_DRIVER_MIR 1)
-            set(SDL_VIDEO_OPENGL_EGL 1)
-
-            if(MIR_SHARED)
-                if(NOT HAVE_DLOPEN)
-                    message_warn("You must have SDL_LoadObject() support for dynamic Mir loading")
-                else()
-                    get_soname (MIRCLIENT_LIB_SONAME MIR_CLIENT)
-                    get_soname (XKBCOMMON_LIB_SONAME XKB)
-                    set(SDL_VIDEO_DRIVER_MIR_DYNAMIC "\"${MIRCLIENT_LIB_SONAME}\"")
-                    set(SDL_VIDEO_DRIVER_MIR_DYNAMIC_XKBCOMMON "\"${XKBCOMMON_LIB_SONAME}\"")
-                    set(HAVE_MIR_SHARED TRUE)
-                endif()
-            else()
-                list (APPEND EXTRA_LIBS mirclient xkbcommon)
-            endif()
-        endif()
-    endif()
-endmacro()
-
 macro(WaylandProtocolGen _SCANNER _XML _PROTL)
     set(_WAYLAND_PROT_C_CODE "${CMAKE_CURRENT_BINARY_DIR}/wayland-generated-protocols/${_PROTL}-protocol.c")
     set(_WAYLAND_PROT_H_CODE "${CMAKE_CURRENT_BINARY_DIR}/wayland-generated-protocols/${_PROTL}-client-protocol.h")
@@ -598,7 +618,7 @@ macro(WaylandProtocolGen _SCANNER _XML _PROTL)
         ARGS code "${_XML}" "${_WAYLAND_PROT_C_CODE}"
     )
 
-    set(SOURCE_FILES ${SOURCE_FILES} "${CMAKE_CURRENT_BINARY_DIR}/wayland-generated-protocols/${_PROTL}-protocol.c")
+    set(SOURCE_FILES ${SOURCE_FILES} "${_WAYLAND_PROT_C_CODE}")
 endmacro()
 
 # Requires:
@@ -622,11 +642,10 @@ macro(CheckWayland)
       file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wayland-generated-protocols")
       include_directories("${CMAKE_CURRENT_BINARY_DIR}/wayland-generated-protocols")
 
-      WaylandProtocolGen("${WAYLAND_SCANNER}" "${WAYLAND_CORE_PROTOCOL_DIR}/wayland.xml" "wayland")
-
-      foreach(_PROTL relative-pointer-unstable-v1 pointer-constraints-unstable-v1)
-        string(REGEX REPLACE "\\-unstable\\-.*$" "" PROTSUBDIR ${_PROTL})
-        WaylandProtocolGen("${WAYLAND_SCANNER}" "${WAYLAND_PROTOCOLS_DIR}/unstable/${PROTSUBDIR}/${_PROTL}.xml" "${_PROTL}")
+      file(GLOB WAYLAND_PROTOCOLS_XML RELATIVE "${SDL2_SOURCE_DIR}/wayland-protocols/" "${SDL2_SOURCE_DIR}/wayland-protocols/*.xml")
+      foreach(_XML ${WAYLAND_PROTOCOLS_XML})
+        string(REGEX REPLACE "\\.xml$" "" _PROTL "${_XML}")
+        WaylandProtocolGen("${WAYLAND_SCANNER}" "${SDL2_SOURCE_DIR}/wayland-protocols/${_XML}" "${_PROTL}")
       endforeach()
 
       if(VIDEO_WAYLAND_QT_TOUCH)
@@ -838,7 +857,7 @@ macro(CheckPTHREAD)
             #include <pthread.h>
             int main(int argc, char **argv) {
               pthread_mutexattr_t attr;
-              pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+              pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
               return 0;
             }" HAVE_RECURSIVE_MUTEXES_NP)
         if(HAVE_RECURSIVE_MUTEXES_NP)
@@ -867,7 +886,6 @@ macro(CheckPTHREAD)
           int main(int argc, char** argv) { return 0; }" HAVE_PTHREAD_NP_H)
       check_function_exists(pthread_setname_np HAVE_PTHREAD_SETNAME_NP)
       check_function_exists(pthread_set_name_np HAVE_PTHREAD_SET_NAME_NP)
-      set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
 
       set(SOURCE_FILES ${SOURCE_FILES}
           ${SDL2_SOURCE_DIR}/src/thread/pthread/SDL_systhread.c
@@ -884,6 +902,7 @@ macro(CheckPTHREAD)
       endif()
       set(HAVE_SDL_THREADS TRUE)
     endif()
+    set(CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
   endif()
 endmacro()
 
@@ -1028,6 +1047,37 @@ macro(CheckUSBHID)
   endif()
 endmacro()
 
+# Check for HIDAPI joystick drivers. This is currently a Unix thing, not Windows or macOS!
+macro(CheckHIDAPI)
+  if(HIDAPI)
+    if(HIDAPI_SKIP_LIBUSB)
+      set(HAVE_HIDAPI TRUE)
+    else()
+      set(HAVE_HIDAPI FALSE)
+      pkg_check_modules(LIBUSB libusb)
+      if (LIBUSB_FOUND)
+        check_include_file(libusb.h HAVE_LIBUSB_H)
+        if (HAVE_LIBUSB_H)
+          set(HAVE_HIDAPI TRUE)
+        endif()
+      endif()
+    endif()
+
+    if(HAVE_HIDAPI)
+      set(SDL_JOYSTICK_HIDAPI 1)
+      set(HAVE_SDL_JOYSTICK TRUE)
+      file(GLOB HIDAPI_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/hidapi/*.c)
+      set(SOURCE_FILES ${SOURCE_FILES} ${HIDAPI_SOURCES})
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBUSB_CFLAGS} -I${SDL2_SOURCE_DIR}/src/hidapi/hidapi")
+      if(NOT HIDAPI_SKIP_LIBUSB)
+        set(SOURCE_FILES ${SOURCE_FILES} ${SDL2_SOURCE_DIR}/src/hidapi/libusb/hid.c)
+        list(APPEND EXTRA_LIBS ${LIBUSB_LIBS})
+      endif()
+    endif()
+  endif()
+endmacro()
+
+
 # Requires:
 # - n/a
 macro(CheckRPI)
@@ -1045,3 +1095,41 @@ macro(CheckRPI)
     endif(SDL_VIDEO AND HAVE_VIDEO_RPI)
   endif(VIDEO_RPI)
 endmacro(CheckRPI)
+
+# Requires:
+# - EGL
+# - PkgCheckModules
+# Optional:
+# - KMSDRM_SHARED opt
+# - HAVE_DLOPEN opt
+macro(CheckKMSDRM)
+  if(VIDEO_KMSDRM)
+    # Urho3D - bug fix - do not use pkg-config tool for detection as it only works for host environment and not for rooted environment when cross-compiling
+    find_package (DirectRenderingManager)
+    find_package (GenericBufferManagement)
+    if(DRM_FOUND AND GBM_FOUND)
+      include_directories (SYSTEM ${DRM_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS})
+      set(HAVE_VIDEO_KMSDRM TRUE)
+      set(HAVE_SDL_VIDEO TRUE)
+
+      file(GLOB KMSDRM_SOURCES ${SDL2_SOURCE_DIR}/src/video/kmsdrm/*.c)
+      set(SOURCE_FILES ${SOURCE_FILES} ${KMSDRM_SOURCES})
+
+      set(SDL_VIDEO_DRIVER_KMSDRM 1)
+
+      if(KMSDRM_SHARED)
+        if(NOT HAVE_DLOPEN)
+          message_warn("You must have SDL_LoadObject() support for dynamic KMS/DRM loading")
+        else()
+          get_soname (DRM_LIB_SONAME DRM_LIBRARIES)
+          get_soname (GBM_LIB_SONAME GBM_LIBRARIES)
+          set(SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC "\"${DRM_LIB_SONAME}\"")
+          set(SDL_VIDEO_DRIVER_KMSDRM_DYNAMIC_GBM "\"${GBM_LIB_SONAME}\"")
+          set(HAVE_KMSDRM_SHARED TRUE)
+        endif()
+      else()
+        list (APPEND EXTRA_LIBS drm gbm)
+      endif()
+    endif()
+  endif()
+endmacro()

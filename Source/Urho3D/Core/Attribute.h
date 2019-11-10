@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,34 +20,41 @@
 // THE SOFTWARE.
 //
 
+/// \file
+
 #pragma once
 
+#include "../Container/FlagSet.h"
 #include "../Container/Ptr.h"
 #include "../Core/Variant.h"
 
 namespace Urho3D
 {
 
-/// Attribute shown only in the editor, but not serialized.
-static const unsigned AM_EDIT = 0x0;
-/// Attribute used for file serialization.
-static const unsigned AM_FILE = 0x1;
-/// Attribute used for network replication.
-static const unsigned AM_NET = 0x2;
-/// Attribute used for both file serialization and network replication (default).
-static const unsigned AM_DEFAULT = 0x3;
-/// Attribute should use latest data grouping instead of delta update in network replication.
-static const unsigned AM_LATESTDATA = 0x4;
-/// Attribute should not be shown in the editor.
-static const unsigned AM_NOEDIT = 0x8;
-/// Attribute is a node ID and may need rewriting.
-static const unsigned AM_NODEID = 0x10;
-/// Attribute is a component ID and may need rewriting.
-static const unsigned AM_COMPONENTID = 0x20;
-/// Attribute is a node ID vector where first element is the amount of nodes.
-static const unsigned AM_NODEIDVECTOR = 0x40;
-/// Attribute is readonly. Can't be used with binary serialized objects.
-static const unsigned AM_FILEREADONLY = 0x81;
+enum AttributeMode
+{
+    /// Attribute shown only in the editor, but not serialized.
+    AM_EDIT = 0x0,
+    /// Attribute used for file serialization.
+    AM_FILE = 0x1,
+    /// Attribute used for network replication.
+    AM_NET = 0x2,
+    /// Attribute used for both file serialization and network replication (default).
+    AM_DEFAULT = 0x3,
+    /// Attribute should use latest data grouping instead of delta update in network replication.
+    AM_LATESTDATA = 0x4,
+    /// Attribute should not be shown in the editor.
+    AM_NOEDIT = 0x8,
+    /// Attribute is a node ID and may need rewriting.
+    AM_NODEID = 0x10,
+    /// Attribute is a component ID and may need rewriting.
+    AM_COMPONENTID = 0x20,
+    /// Attribute is a node ID vector where first element is the amount of nodes.
+    AM_NODEIDVECTOR = 0x40,
+    /// Attribute is readonly. Can't be used with binary serialized objects.
+    AM_FILEREADONLY = 0x81,
+};
+URHO3D_FLAGSET(AttributeMode, AttributeModeFlags);
 
 class Serializable;
 
@@ -65,10 +72,10 @@ public:
 struct AttributeInfo
 {
     /// Construct empty.
-    AttributeInfo() { }
+    AttributeInfo() = default;
 
     /// Construct attribute.
-    AttributeInfo(VariantType type, const char* name, SharedPtr<AttributeAccessor> accessor, const char** enumNames, const Variant& defaultValue, unsigned mode) :
+    AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
         enumNames_(enumNames),
@@ -102,7 +109,7 @@ struct AttributeInfo
     /// Default value for network replication.
     Variant defaultValue_;
     /// Attribute mode: whether to use for serialization, network replication, or both.
-    unsigned mode_ = AM_DEFAULT;
+    AttributeModeFlags mode_ = AM_DEFAULT;
     /// Attribute metadata.
     VariantMap metadata_;
     /// Attribute data pointer if elsewhere than in the Serializable.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,21 +45,22 @@ class ByteCodeSerializer : public asIBinaryStream
 {
 public:
     /// Construct.
-    ByteCodeSerializer(Serializer& dest) :
+    explicit ByteCodeSerializer(Serializer& dest) :
         dest_(dest)
     {
     }
 
     /// Read from stream (no-op).
-    virtual void Read(void* ptr, asUINT size) override
+    int Read(void* ptr, asUINT size) override
     {
         // No-op, can not read from a Serializer
+        return 0;
     }
 
     /// Write to stream.
-    virtual void Write(const void* ptr, asUINT size) override
+    int Write(const void* ptr, asUINT size) override
     {
-        dest_.Write(ptr, size);
+        return dest_.Write(ptr, size);
     }
 
 private:
@@ -72,20 +73,21 @@ class ByteCodeDeserializer : public asIBinaryStream
 {
 public:
     /// Construct.
-    ByteCodeDeserializer(MemoryBuffer& source) :
+    explicit ByteCodeDeserializer(MemoryBuffer& source) :
         source_(source)
     {
     }
 
     /// Read from stream.
-    virtual void Read(void* ptr, asUINT size) override
+    int Read(void* ptr, asUINT size) override
     {
-        source_.Read(ptr, size);
+        return source_.Read(ptr, size);
     }
 
     /// Write to stream (no-op).
-    virtual void Write(const void* ptr, asUINT size) override
+    int Write(const void* ptr, asUINT size) override
     {
+        return 0;
     }
 
 private:
@@ -95,10 +97,7 @@ private:
 
 ScriptFile::ScriptFile(Context* context) :
     Resource(context),
-    script_(GetSubsystem<Script>()),
-    scriptModule_(nullptr),
-    compiled_(false),
-    subscribed_(false)
+    script_(GetSubsystem<Script>())
 {
 }
 
@@ -212,7 +211,7 @@ void ScriptFile::AddEventHandler(Object* sender, StringHash eventType, const Str
 
 void ScriptFile::RemoveEventHandler(StringHash eventType)
 {
-    asIScriptObject* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
+    auto* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
     HashMap<asIScriptObject*, SharedPtr<ScriptEventInvoker> >::Iterator i = eventInvokers_.Find(receiver);
     if (i != eventInvokers_.End())
     {
@@ -225,7 +224,7 @@ void ScriptFile::RemoveEventHandler(StringHash eventType)
 
 void ScriptFile::RemoveEventHandler(Object* sender, StringHash eventType)
 {
-    asIScriptObject* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
+    auto* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
     HashMap<asIScriptObject*, SharedPtr<ScriptEventInvoker> >::Iterator i = eventInvokers_.Find(receiver);
     if (i != eventInvokers_.End())
     {
@@ -237,7 +236,7 @@ void ScriptFile::RemoveEventHandler(Object* sender, StringHash eventType)
 
 void ScriptFile::RemoveEventHandlers(Object* sender)
 {
-    asIScriptObject* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
+    auto* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
     HashMap<asIScriptObject*, SharedPtr<ScriptEventInvoker> >::Iterator i = eventInvokers_.Find(receiver);
     if (i != eventInvokers_.End())
     {
@@ -249,7 +248,7 @@ void ScriptFile::RemoveEventHandlers(Object* sender)
 
 void ScriptFile::RemoveEventHandlers()
 {
-    asIScriptObject* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
+    auto* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
     HashMap<asIScriptObject*, SharedPtr<ScriptEventInvoker> >::Iterator i = eventInvokers_.Find(receiver);
     if (i != eventInvokers_.End())
     {
@@ -261,7 +260,7 @@ void ScriptFile::RemoveEventHandlers()
 
 void ScriptFile::RemoveEventHandlersExcept(const PODVector<StringHash>& exceptions)
 {
-    asIScriptObject* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
+    auto* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
     HashMap<asIScriptObject*, SharedPtr<ScriptEventInvoker> >::Iterator i = eventInvokers_.Find(receiver);
     if (i != eventInvokers_.End())
     {
@@ -273,7 +272,7 @@ void ScriptFile::RemoveEventHandlersExcept(const PODVector<StringHash>& exceptio
 
 bool ScriptFile::HasEventHandler(StringHash eventType) const
 {
-    asIScriptObject* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
+    auto* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
     HashMap<asIScriptObject*, SharedPtr<ScriptEventInvoker> >::ConstIterator i = eventInvokers_.Find(receiver);
     if (i != eventInvokers_.End())
         return i->second_->HasSubscribedToEvent(eventType);
@@ -283,7 +282,7 @@ bool ScriptFile::HasEventHandler(StringHash eventType) const
 
 bool ScriptFile::HasEventHandler(Object* sender, StringHash eventType) const
 {
-    asIScriptObject* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
+    auto* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
     HashMap<asIScriptObject*, SharedPtr<ScriptEventInvoker> >::ConstIterator i = eventInvokers_.Find(receiver);
     if (i != eventInvokers_.End())
         return i->second_->HasSubscribedToEvent(sender, eventType);
@@ -291,7 +290,7 @@ bool ScriptFile::HasEventHandler(Object* sender, StringHash eventType) const
         return false;
 }
 
-bool ScriptFile::Execute(const String& declaration, const VariantVector& parameters, bool unprepare)
+bool ScriptFile::Execute(const String& declaration, const VariantVector& parameters, Variant* functionReturn, bool unprepare)
 {
     asIScriptFunction* function = GetFunction(declaration);
     if (!function)
@@ -300,10 +299,10 @@ bool ScriptFile::Execute(const String& declaration, const VariantVector& paramet
         return false;
     }
 
-    return Execute(function, parameters, unprepare);
+    return Execute(function, parameters, functionReturn, unprepare);
 }
 
-bool ScriptFile::Execute(asIScriptFunction* function, const VariantVector& parameters, bool unprepare)
+bool ScriptFile::Execute(asIScriptFunction* function, const VariantVector& parameters, Variant* functionReturn, bool unprepare)
 {
     URHO3D_PROFILE(ExecuteFunction);
 
@@ -321,7 +320,123 @@ bool ScriptFile::Execute(asIScriptFunction* function, const VariantVector& param
     SetParameters(context, function, parameters);
 
     scriptSystem->IncScriptNestingLevel();
-    bool success = context->Execute() >= 0;
+    bool success = (context->Execute() == asEXECUTION_FINISHED);
+    if (success && (functionReturn != nullptr))
+    {
+        const int typeId = function->GetReturnTypeId();
+
+        asIScriptEngine* engine = script_->GetScriptEngine();
+        asITypeInfo* typeInfo = engine->GetTypeInfoById(typeId);
+
+        // Built-in type
+        if (typeInfo == nullptr)
+        {
+            switch (typeId)
+            {
+            case asTYPEID_VOID:
+                *functionReturn = Variant::EMPTY;
+                break;
+
+            case asTYPEID_BOOL:
+                *functionReturn = Variant(context->GetReturnByte() > 0);
+                break;
+
+            case asTYPEID_INT8:
+            case asTYPEID_UINT8:
+            case asTYPEID_INT16:
+            case asTYPEID_UINT16:
+            case asTYPEID_INT32:
+            case asTYPEID_UINT32:
+                *functionReturn = Variant(static_cast<int>(context->GetReturnDWord()));
+                break;
+
+            case asTYPEID_INT64:
+            case asTYPEID_UINT64:
+                *functionReturn = Variant(static_cast<long long>(context->GetReturnQWord()));
+                break;
+
+            case asTYPEID_FLOAT:
+                *functionReturn = Variant(context->GetReturnFloat());
+                break;
+
+            case asTYPEID_DOUBLE:
+                *functionReturn = Variant(context->GetReturnDouble());
+                break;
+            }
+        }
+        else if (typeInfo->GetFlags() & asOBJ_REF)
+        {
+            *functionReturn = Variant(static_cast<RefCounted*>(context->GetReturnObject()));
+        }
+        else if (typeInfo->GetFlags() & asOBJ_VALUE)
+        {
+            void* returnedObject = context->GetReturnObject();
+
+            const VariantType variantType = Variant::GetTypeFromName(typeInfo->GetName());
+            switch (variantType)
+            {
+            case VAR_STRING:
+                *functionReturn = *static_cast<String*>(returnedObject);
+                break;
+
+            case VAR_VECTOR2:
+                *functionReturn = *static_cast<Vector2*>(returnedObject);
+                break;
+
+            case VAR_VECTOR3:
+                *functionReturn = *static_cast<Vector3*>(returnedObject);
+                break;
+
+            case VAR_VECTOR4:
+                *functionReturn = *static_cast<Vector4*>(returnedObject);
+                break;
+
+            case VAR_QUATERNION:
+                *functionReturn = *static_cast<Quaternion*>(returnedObject);
+                break;
+
+            case VAR_COLOR:
+                *functionReturn = *static_cast<Color*>(returnedObject);
+                break;
+
+            case VAR_INTRECT:
+                *functionReturn = *static_cast<IntRect*>(returnedObject);
+                break;
+
+            case VAR_INTVECTOR2:
+                *functionReturn = *static_cast<IntVector2*>(returnedObject);
+                break;
+
+            case VAR_MATRIX3:
+                *functionReturn = *static_cast<Matrix3*>(returnedObject);
+                break;
+
+            case VAR_MATRIX3X4:
+                *functionReturn = *static_cast<Matrix3x4*>(returnedObject);
+                break;
+
+            case VAR_MATRIX4:
+                *functionReturn = *static_cast<Matrix4*>(returnedObject);
+                break;
+
+            case VAR_RECT:
+                *functionReturn = *static_cast<Rect*>(returnedObject);
+                break;
+
+            case VAR_INTVECTOR3:
+                *functionReturn = *static_cast<IntVector3*>(returnedObject);
+                break;
+
+            default:
+                URHO3D_LOGERRORF("Return type (%c) is not supported", typeInfo->GetName());
+                break;
+            }
+        }
+        else
+        {
+            URHO3D_LOGERRORF("Return type (%c)is not supported", typeInfo->GetName());
+        }
+    }
     if (unprepare)
         context->Unprepare();
     scriptSystem->DecScriptNestingLevel();
@@ -329,7 +444,8 @@ bool ScriptFile::Execute(asIScriptFunction* function, const VariantVector& param
     return success;
 }
 
-bool ScriptFile::Execute(asIScriptObject* object, const String& declaration, const VariantVector& parameters, bool unprepare)
+bool ScriptFile::Execute(asIScriptObject* object, const String& declaration, const VariantVector& parameters, Variant* functionReturn,
+    bool unprepare)
 {
     if (!object)
         return false;
@@ -341,10 +457,11 @@ bool ScriptFile::Execute(asIScriptObject* object, const String& declaration, con
         return false;
     }
 
-    return Execute(object, method, parameters, unprepare);
+    return Execute(object, method, parameters, functionReturn, unprepare);
 }
 
-bool ScriptFile::Execute(asIScriptObject* object, asIScriptFunction* method, const VariantVector& parameters, bool unprepare)
+bool ScriptFile::Execute(asIScriptObject* object, asIScriptFunction* method, const VariantVector& parameters, Variant* functionReturn,
+    bool unprepare)
 {
     URHO3D_PROFILE(ExecuteMethod);
 
@@ -486,34 +603,34 @@ bool ScriptFile::SaveByteCode(Serializer& dest)
         return false;
 }
 
-asIScriptFunction* ScriptFile::GetFunction(const String& declarationIn)
+asIScriptFunction* ScriptFile::GetFunction(const String& declaration)
 {
     if (!compiled_)
         return nullptr;
 
-    String declaration = declarationIn.Trimmed();
-    // If not a full declaration, assume void with no parameters
-    if (declaration.Find('(') == String::NPOS)
-        declaration = "void " + declaration + "()";
+    String trimDecl = declaration.Trimmed();
+    // If not a full trimDecl, assume void with no parameters
+    if (trimDecl.Find('(') == String::NPOS)
+        trimDecl = "void " + trimDecl + "()";
 
-    HashMap<String, asIScriptFunction*>::ConstIterator i = functions_.Find(declaration);
+    HashMap<String, asIScriptFunction*>::ConstIterator i = functions_.Find(trimDecl);
     if (i != functions_.End())
         return i->second_;
 
-    asIScriptFunction* function = scriptModule_->GetFunctionByDecl(declaration.CString());
-    functions_[declaration] = function;
+    asIScriptFunction* function = scriptModule_->GetFunctionByDecl(trimDecl.CString());
+    functions_[trimDecl] = function;
     return function;
 }
 
-asIScriptFunction* ScriptFile::GetMethod(asIScriptObject* object, const String& declarationIn)
+asIScriptFunction* ScriptFile::GetMethod(asIScriptObject* object, const String& declaration)
 {
     if (!compiled_ || !object)
         return nullptr;
 
-    String declaration = declarationIn.Trimmed();
-    // If not a full declaration, assume void with no parameters
-    if (declaration.Find('(') == String::NPOS)
-        declaration = "void " + declaration + "()";
+    String trimDecl = declaration.Trimmed();
+    // If not a full trimDecl, assume void with no parameters
+    if (trimDecl.Find('(') == String::NPOS)
+        trimDecl = "void " + trimDecl + "()";
 
     asITypeInfo* type = object->GetObjectType();
     if (!type)
@@ -522,13 +639,13 @@ asIScriptFunction* ScriptFile::GetMethod(asIScriptObject* object, const String& 
     HashMap<asITypeInfo*, HashMap<String, asIScriptFunction*> >::ConstIterator i = methods_.Find(type);
     if (i != methods_.End())
     {
-        HashMap<String, asIScriptFunction*>::ConstIterator j = i->second_.Find(declaration);
+        HashMap<String, asIScriptFunction*>::ConstIterator j = i->second_.Find(trimDecl);
         if (j != i->second_.End())
             return j->second_;
     }
 
-    asIScriptFunction* function = type->GetMethodByDecl(declaration.CString());
-    methods_[type][declaration] = function;
+    asIScriptFunction* function = type->GetMethodByDecl(trimDecl.CString());
+    methods_[type][trimDecl] = function;
     return function;
 }
 
@@ -541,7 +658,7 @@ void ScriptFile::AddEventHandlerInternal(Object* sender, StringHash eventType, c
 {
     String declaration = "void " + handlerName + "(StringHash, VariantMap&)";
     asIScriptFunction* function = nullptr;
-    asIScriptObject* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
+    auto* receiver = static_cast<asIScriptObject*>(asGetActiveContext()->GetThisPointer());
 
     if (receiver)
         function = GetMethod(receiver, declaration);
@@ -587,7 +704,7 @@ void ScriptFile::AddEventHandlerInternal(Object* sender, StringHash eventType, c
 
 bool ScriptFile::AddScriptSection(asIScriptEngine* engine, Deserializer& source)
 {
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     unsigned dataSize = source.GetSize();
     SharedArrayPtr<char> buffer(new char[dataSize]);
@@ -744,6 +861,11 @@ void ScriptFile::SetParameters(asIScriptContext* context, asIScriptFunction* fun
             context->SetArgDWord(i, (asDWORD)parameters[i].GetInt());
             break;
 
+        case asTYPEID_INT64:
+        case asTYPEID_UINT64:
+            context->SetArgQWord(i, (asQWORD)parameters[i].GetInt64());
+            break;
+
         case asTYPEID_FLOAT:
             context->SetArgFloat(i, parameters[i].GetFloat());
             break;
@@ -857,7 +979,7 @@ void ScriptFile::ReleaseModule()
         compiled_ = false;
         SetMemoryUse(0);
 
-        ResourceCache* cache = GetSubsystem<ResourceCache>();
+        auto* cache = GetSubsystem<ResourceCache>();
         if (cache)
             cache->ResetDependencies(this);
     }
@@ -935,7 +1057,7 @@ void ScriptEventInvoker::HandleScriptEvent(StringHash eventType, VariantMap& eve
     if (!file_->IsCompiled())
         return;
 
-    asIScriptFunction* method = static_cast<asIScriptFunction*>(GetEventHandler()->GetUserData());
+    auto* method = static_cast<asIScriptFunction*>(GetEventHandler()->GetUserData());
 
     if (object_ && !IsObjectAlive())
     {

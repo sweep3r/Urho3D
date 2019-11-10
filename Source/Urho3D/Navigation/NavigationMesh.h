@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,6 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+/// \file
 
 #pragma once
 
@@ -95,14 +97,14 @@ class URHO3D_API NavigationMesh : public Component
 
 public:
     /// Construct.
-    NavigationMesh(Context* context);
+    explicit NavigationMesh(Context* context);
     /// Destruct.
-    virtual ~NavigationMesh() override;
+    ~NavigationMesh() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
 
     /// Visualize the component as debug geometry.
-    virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
     /// Set tile size.
     void SetTileSize(int size);
@@ -153,7 +155,7 @@ public:
     /// Return whether the navigation mesh has tile.
     bool HasTile(const IntVector2& tile) const;
     /// Return bounding box of the tile in the node space.
-    BoundingBox GetTileBoudningBox(const IntVector2& tile) const;
+    BoundingBox GetTileBoundingBox(const IntVector2& tile) const;
     /// Return index of the tile at the position.
     IntVector2 GetTileIndex(const Vector3& position) const;
     /// Find the nearest point on the navigation mesh to a given point. Extents specifies how far out from the specified point to check along each axis.
@@ -250,7 +252,7 @@ public:
     IntVector2 GetNumTiles() const { return IntVector2(numTilesX_, numTilesZ_); }
 
     /// Set the partition type used for polygon generation.
-    void SetPartitionType(NavmeshPartitionType aType);
+    void SetPartitionType(NavmeshPartitionType partitionType);
 
     /// Return Partition Type.
     NavmeshPartitionType GetPartitionType() const { return partitionType_; }

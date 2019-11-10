@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -112,7 +112,7 @@ void Scene::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, String, String::EMPTY, AM_FILE | AM_NOEDIT);
 }
 
-bool Scene::Load(Deserializer& source, bool setInstanceDefault)
+bool Scene::Load(Deserializer& source)
 {
     URHO3D_PROFILE(LoadScene);
 
@@ -130,7 +130,7 @@ bool Scene::Load(Deserializer& source, bool setInstanceDefault)
     Clear();
 
     // Load the whole scene, then perform post-load if successfully loaded
-    if (Node::Load(source, setInstanceDefault))
+    if (Node::Load(source))
     {
         FinishLoading(&source);
         return true;
@@ -150,7 +150,7 @@ bool Scene::Save(Serializer& dest) const
         return false;
     }
 
-    Deserializer* ptr = dynamic_cast<Deserializer*>(&dest);
+    auto* ptr = dynamic_cast<Deserializer*>(&dest);
     if (ptr)
         URHO3D_LOGINFO("Saving scene to " + ptr->GetName());
 
@@ -163,7 +163,7 @@ bool Scene::Save(Serializer& dest) const
         return false;
 }
 
-bool Scene::LoadXML(const XMLElement& source, bool setInstanceDefault)
+bool Scene::LoadXML(const XMLElement& source)
 {
     URHO3D_PROFILE(LoadSceneXML);
 
@@ -171,7 +171,7 @@ bool Scene::LoadXML(const XMLElement& source, bool setInstanceDefault)
 
     // Load the whole scene, then perform post-load if successfully loaded
     // Note: the scene filename and checksum can not be set, as we only used an XML element
-    if (Node::LoadXML(source, setInstanceDefault))
+    if (Node::LoadXML(source))
     {
         FinishLoading(nullptr);
         return true;
@@ -180,7 +180,7 @@ bool Scene::LoadXML(const XMLElement& source, bool setInstanceDefault)
         return false;
 }
 
-bool Scene::LoadJSON(const JSONValue& source, bool setInstanceDefault)
+bool Scene::LoadJSON(const JSONValue& source)
 {
     URHO3D_PROFILE(LoadSceneJSON);
 
@@ -188,7 +188,7 @@ bool Scene::LoadJSON(const JSONValue& source, bool setInstanceDefault)
 
     // Load the whole scene, then perform post-load if successfully loaded
     // Note: the scene filename and checksum can not be set, as we only used an XML element
-    if (Node::LoadJSON(source, setInstanceDefault))
+    if (Node::LoadJSON(source))
     {
         FinishLoading(nullptr);
         return true;
@@ -270,7 +270,7 @@ bool Scene::SaveXML(Serializer& dest, const String& indentation) const
     if (!SaveXML(rootElem))
         return false;
 
-    Deserializer* ptr = dynamic_cast<Deserializer*>(&dest);
+    auto* ptr = dynamic_cast<Deserializer*>(&dest);
     if (ptr)
         URHO3D_LOGINFO("Saving scene to " + ptr->GetName());
 
@@ -292,7 +292,7 @@ bool Scene::SaveJSON(Serializer& dest, const String& indentation) const
     if (!SaveJSON(rootVal))
         return false;
 
-    Deserializer* ptr = dynamic_cast<Deserializer*>(&dest);
+    auto* ptr = dynamic_cast<Deserializer*>(&dest);
     if (ptr)
         URHO3D_LOGINFO("Saving scene to " + ptr->GetName());
 
@@ -706,7 +706,7 @@ void Scene::UnregisterAllVars()
 
 Node* Scene::GetNode(unsigned id) const
 {
-    if (id < FIRST_LOCAL_ID)
+    if (IsReplicatedID(id))
     {
         HashMap<unsigned, Node*>::ConstIterator i = replicatedNodes_.Find(id);
         return i != replicatedNodes_.End() ? i->second_ : nullptr;
@@ -733,7 +733,7 @@ bool Scene::GetNodesWithTag(PODVector<Node*>& dest, const String& tag) const
 
 Component* Scene::GetComponent(unsigned id) const
 {
-    if (id < FIRST_LOCAL_ID)
+    if (IsReplicatedID(id))
     {
         HashMap<unsigned, Component*>::ConstIterator i = replicatedComponents_.Find(id);
         return i != replicatedComponents_.End() ? i->second_ : nullptr;
@@ -925,7 +925,7 @@ void Scene::NodeAdded(Node* node)
     }
 
     // If node with same ID exists, remove the scene reference from it and overwrite with the new node
-    if (id < FIRST_LOCAL_ID)
+    if (IsReplicatedID(id))
     {
         HashMap<unsigned, Node*>::Iterator i = replicatedNodes_.Find(id);
         if (i != replicatedNodes_.End() && i->second_ != node)
@@ -983,7 +983,7 @@ void Scene::NodeRemoved(Node* node)
         return;
 
     unsigned id = node->GetID();
-    if (id < FIRST_LOCAL_ID)
+    if (Scene::IsReplicatedID(id))
     {
         replicatedNodes_.Erase(id);
         MarkReplicationDirty(node);
@@ -1024,7 +1024,7 @@ void Scene::ComponentAdded(Component* component)
         component->SetID(id);
     }
 
-    if (id < FIRST_LOCAL_ID)
+    if (IsReplicatedID(id))
     {
         HashMap<unsigned, Component*>::Iterator i = replicatedComponents_.Find(id);
         if (i != replicatedComponents_.End() && i->second_ != component)
@@ -1057,7 +1057,7 @@ void Scene::ComponentRemoved(Component* component)
         return;
 
     unsigned id = component->GetID();
-    if (id < FIRST_LOCAL_ID)
+    if (Scene::IsReplicatedID(id))
         replicatedComponents_.Erase(id);
     else
         localComponents_.Erase(id);
@@ -1152,14 +1152,13 @@ void Scene::MarkNetworkUpdate(Component* component)
 
 void Scene::MarkReplicationDirty(Node* node)
 {
-    unsigned id = node->GetID();
-
-    if (id < FIRST_LOCAL_ID && networkState_)
+    if (networkState_ && node->IsReplicated())
     {
+        unsigned id = node->GetID();
         for (PODVector<ReplicationState*>::Iterator i = networkState_->replicationStates_.Begin();
              i != networkState_->replicationStates_.End(); ++i)
         {
-            NodeReplicationState* nodeState = static_cast<NodeReplicationState*>(*i);
+            auto* nodeState = static_cast<NodeReplicationState*>(*i);
             nodeState->sceneState_->dirtyNodes_.Insert(id);
         }
     }
@@ -1180,7 +1179,7 @@ void Scene::HandleResourceBackgroundLoaded(StringHash eventType, VariantMap& eve
 
     if (asyncLoading_)
     {
-        Resource* resource = static_cast<Resource*>(eventData[P_RESOURCE].GetPtr());
+        auto* resource = static_cast<Resource*>(eventData[P_RESOURCE].GetPtr());
         if (asyncProgress_.resources_.Contains(resource->GetNameHash()))
         {
             asyncProgress_.resources_.Erase(resource->GetNameHash());
@@ -1213,7 +1212,7 @@ void Scene::UpdateAsyncLoading()
         if (asyncProgress_.xmlFile_)
         {
             unsigned nodeID = asyncProgress_.xmlElement_.GetUInt("id");
-            Node* newNode = CreateChild(nodeID, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL);
+            Node* newNode = CreateChild(nodeID, IsReplicatedID(nodeID) ? REPLICATED : LOCAL);
             resolver_.AddNode(nodeID, newNode);
             newNode->LoadXML(asyncProgress_.xmlElement_, resolver_);
             asyncProgress_.xmlElement_ = asyncProgress_.xmlElement_.GetNext("node");
@@ -1223,7 +1222,7 @@ void Scene::UpdateAsyncLoading()
             const JSONValue& childValue = asyncProgress_.jsonFile_->GetRoot().Get("children").GetArray().At(asyncProgress_.jsonIndex_);
 
             unsigned nodeID =childValue.Get("id").GetUInt();
-            Node* newNode = CreateChild(nodeID, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL);
+            Node* newNode = CreateChild(nodeID, IsReplicatedID(nodeID) ? REPLICATED : LOCAL);
             resolver_.AddNode(nodeID, newNode);
             newNode->LoadJSON(childValue, resolver_);
             ++asyncProgress_.jsonIndex_;
@@ -1231,7 +1230,7 @@ void Scene::UpdateAsyncLoading()
         else // Load from binary
         {
             unsigned nodeID = asyncProgress_.file_->ReadUInt();
-            Node* newNode = CreateChild(nodeID, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL);
+            Node* newNode = CreateChild(nodeID, IsReplicatedID(nodeID) ? REPLICATED : LOCAL);
             resolver_.AddNode(nodeID, newNode);
             newNode->Load(*asyncProgress_.file_, resolver_);
         }
@@ -1239,7 +1238,7 @@ void Scene::UpdateAsyncLoading()
         ++asyncProgress_.loadedNodes_;
 
         // Break if time limit exceeded, so that we keep sufficient FPS
-        if (asyncLoadTimer.GetUSec(false) >= asyncLoadingMs_ * 1000)
+        if (asyncLoadTimer.GetUSec(false) >= asyncLoadingMs_ * 1000LL)
             break;
     }
 
@@ -1284,7 +1283,7 @@ void Scene::FinishLoading(Deserializer* source)
 
 void Scene::FinishSaving(Serializer* dest) const
 {
-    Deserializer* ptr = dynamic_cast<Deserializer*>(dest);
+    auto* ptr = dynamic_cast<Deserializer*>(dest);
     if (ptr)
     {
         fileName_ = ptr->GetName();
@@ -1296,7 +1295,7 @@ void Scene::PreloadResources(File* file, bool isSceneFile)
 {
     // If not threaded, can not background load resources, so rather load synchronously later when needed
 #ifdef URHO3D_THREADING
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     // Read node ID (not needed)
     /*unsigned nodeID = */file->ReadUInt();
@@ -1372,7 +1371,7 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
 {
     // If not threaded, can not background load resources, so rather load synchronously later when needed
 #ifdef URHO3D_THREADING
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     // Node or Scene attributes do not include any resources; therefore skip to the components
     XMLElement compElem = element.GetChild("component");
@@ -1452,7 +1451,7 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
 {
     // If not threaded, can not background load resources, so rather load synchronously later when needed
 #ifdef URHO3D_THREADING
-    ResourceCache* cache = GetSubsystem<ResourceCache>();
+    auto* cache = GetSubsystem<ResourceCache>();
 
     // Node or Scene attributes do not include any resources; therefore skip to the components
     JSONArray componentArray = value.Get("components").GetArray();

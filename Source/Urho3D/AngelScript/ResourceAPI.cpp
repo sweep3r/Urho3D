@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2017 the Urho3D project.
+// Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -133,8 +133,9 @@ static void RegisterLocalization(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Localization", "void SetLanguage(const String&in)", asMETHODPR(Localization, SetLanguage, (const String&), void), asCALL_THISCALL);
     engine->RegisterObjectMethod("Localization", "String Get(const String&in)", asMETHOD(Localization, Get), asCALL_THISCALL);
     engine->RegisterObjectMethod("Localization", "void Reset()", asMETHOD(Localization, Reset), asCALL_THISCALL);
-    engine->RegisterObjectMethod("Localization", "void LoadJSON(const JSONValue&in)", asMETHOD(Localization, LoadJSON), asCALL_THISCALL);
-    engine->RegisterObjectMethod("Localization", "void LoadJSONFile(const String&in)", asMETHOD(Localization, LoadJSONFile), asCALL_THISCALL);
+    engine->RegisterObjectMethod("Localization", "void LoadMultipleLanguageJSON(const JSONValue&in)", asMETHOD(Localization, LoadMultipleLanguageJSON), asCALL_THISCALL);
+    engine->RegisterObjectMethod("Localization", "void LoadSingleLanguageJSON(const JSONValue&in, const String&language = String(\"\") const)", asMETHOD(Localization, LoadSingleLanguageJSON), asCALL_THISCALL);
+    engine->RegisterObjectMethod("Localization", "void LoadJSONFile(const String&in, const String language = String(\"\") const)", asMETHOD(Localization, LoadJSONFile), asCALL_THISCALL);
     engine->RegisterGlobalFunction("Localization@+ get_localization()", asFUNCTION(GetLocalization), asCALL_CDECL);
 }
 
@@ -395,14 +396,14 @@ static void RegisterJSONValue(asIScriptEngine* engine)
     engine->RegisterObjectMethod("JSONValue", "bool get_isArray() const", asMETHOD(JSONValue, IsArray), asCALL_THISCALL);
     engine->RegisterObjectMethod("JSONValue", "bool get_isObject() const", asMETHOD(JSONValue, IsObject), asCALL_THISCALL);
 
-    engine->RegisterObjectMethod("JSONValue", "bool GetBool() const", asMETHOD(JSONValue, GetBool), asCALL_THISCALL);
-    engine->RegisterObjectMethod("JSONValue", "int GetInt() const", asMETHOD(JSONValue, GetInt), asCALL_THISCALL);
-    engine->RegisterObjectMethod("JSONValue", "uint GetUInt() const", asMETHOD(JSONValue, GetUInt), asCALL_THISCALL);
-    engine->RegisterObjectMethod("JSONValue", "float GetFloat() const", asMETHOD(JSONValue, GetFloat), asCALL_THISCALL);
-    engine->RegisterObjectMethod("JSONValue", "double GetDouble() const", asMETHOD(JSONValue, GetDouble), asCALL_THISCALL);
-    engine->RegisterObjectMethod("JSONValue", "const String& GetString() const", asMETHOD(JSONValue, GetString), asCALL_THISCALL);
-    engine->RegisterObjectMethod("JSONValue", "Variant GetVariant() const", asMETHOD(JSONValue, GetVariant), asCALL_THISCALL);
-    engine->RegisterObjectMethod("JSONValue", "VariantMap GetVariantMap() const", asMETHOD(JSONValue, GetVariantMap), asCALL_THISCALL);
+    engine->RegisterObjectMethod("JSONValue", "bool GetBool(bool defaultValue = false) const", asMETHOD(JSONValue, GetBool), asCALL_THISCALL);
+    engine->RegisterObjectMethod("JSONValue", "int GetInt(int defaultValue = 0) const", asMETHOD(JSONValue, GetInt), asCALL_THISCALL);
+    engine->RegisterObjectMethod("JSONValue", "uint GetUInt(uint defaultValue = 0) const", asMETHOD(JSONValue, GetUInt), asCALL_THISCALL);
+    engine->RegisterObjectMethod("JSONValue", "float GetFloat(float defaultValue = 0) const", asMETHOD(JSONValue, GetFloat), asCALL_THISCALL);
+    engine->RegisterObjectMethod("JSONValue", "double GetDouble(double defaultValue = 0) const", asMETHOD(JSONValue, GetDouble), asCALL_THISCALL);
+    engine->RegisterObjectMethod("JSONValue", "const String& GetString(const String& defaultValue = String()) const", asMETHOD(JSONValue, GetString), asCALL_THISCALL);
+    engine->RegisterObjectMethod("JSONValue", "Variant GetVariant(Variant defaultValue = Variant()) const", asMETHOD(JSONValue, GetVariant), asCALL_THISCALL);
+    engine->RegisterObjectMethod("JSONValue", "VariantMap GetVariantMap(VariantMap defaultValue = VariantMap()) const", asMETHOD(JSONValue, GetVariantMap), asCALL_THISCALL);
 
     engine->RegisterObjectMethod("JSONValue", "JSONValue& opIndex(uint)", asFUNCTION(JSONValueAtPosition), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("JSONValue", "const JSONValue& opIndex(uint) const", asFUNCTION(JSONValueAtPosition), asCALL_CDECL_OBJLAST);
@@ -435,6 +436,7 @@ static void RegisterJSONFile(asIScriptEngine* engine)
 {
     RegisterResource<JSONFile>(engine, "JSONFile");
     engine->RegisterObjectMethod("JSONFile", "bool FromString(const String&in)", asMETHOD(JSONFile, FromString), asCALL_THISCALL);
+    engine->RegisterObjectMethod("JSONFile", "String ToString(const String&in = String(\"\t\")) const", asMETHOD(JSONFile, ToString), asCALL_THISCALL);
     engine->RegisterObjectMethod("JSONFile", "JSONValue& GetRoot()", asMETHODPR(JSONFile, GetRoot, () const, const JSONValue&), asCALL_THISCALL);
     engine->RegisterObjectMethod("JSONFile", "bool Save(File@+, const String&in) const", asFUNCTION(JSONFileSave), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("JSONFile", "JSONValue& get_root()", asMETHODPR(JSONFile, GetRoot, () const, const JSONValue&), asCALL_THISCALL);
@@ -620,10 +622,10 @@ static void RegisterXMLElement(asIScriptEngine* engine)
     engine->RegisterObjectMethod("XPathQuery", "bool SetVariable(const String&in, const XPathResultSet&in)", asMETHODPR(XPathQuery, SetVariable, (const String&, const XPathResultSet&), bool), asCALL_THISCALL);
     engine->RegisterObjectMethod("XPathQuery", "bool SetQuery(const String&, const String& arg1 = String(), bool arg2 = true)", asMETHOD(XPathQuery, SetQuery), asCALL_THISCALL);
     engine->RegisterObjectMethod("XPathQuery", "void Clear()", asMETHOD(XPathQuery, Clear), asCALL_THISCALL);
-    engine->RegisterObjectMethod("XPathQuery", "bool EvaluateToBool(XMLElement)", asMETHOD(XPathQuery, EvaluateToBool), asCALL_THISCALL);
-    engine->RegisterObjectMethod("XPathQuery", "float EvaluateToFloat(XMLElement)", asMETHOD(XPathQuery, EvaluateToFloat), asCALL_THISCALL);
-    engine->RegisterObjectMethod("XPathQuery", "String EvaluateToString(XMLElement)", asMETHOD(XPathQuery, EvaluateToString), asCALL_THISCALL);
-    engine->RegisterObjectMethod("XPathQuery", "XPathResultSet Evaluate(XMLElement)", asMETHOD(XPathQuery, Evaluate), asCALL_THISCALL);
+    engine->RegisterObjectMethod("XPathQuery", "bool EvaluateToBool(const XMLElement&in)", asMETHOD(XPathQuery, EvaluateToBool), asCALL_THISCALL);
+    engine->RegisterObjectMethod("XPathQuery", "float EvaluateToFloat(const XMLElement&in)", asMETHOD(XPathQuery, EvaluateToFloat), asCALL_THISCALL);
+    engine->RegisterObjectMethod("XPathQuery", "String EvaluateToString(const XMLElement&in)", asMETHOD(XPathQuery, EvaluateToString), asCALL_THISCALL);
+    engine->RegisterObjectMethod("XPathQuery", "XPathResultSet Evaluate(const XMLElement&in)", asMETHOD(XPathQuery, Evaluate), asCALL_THISCALL);
     engine->RegisterObjectMethod("XPathQuery", "void set_query(const String&)", asMETHOD(XPathQuery, SetQuery), asCALL_THISCALL);
     engine->RegisterObjectMethod("XPathQuery", "String get_query() const", asMETHOD(XPathQuery, GetQuery), asCALL_THISCALL);
 }
@@ -648,7 +650,7 @@ static void RegisterXMLFile(asIScriptEngine* engine)
     engine->RegisterObjectMethod("XMLFile", "String ToString(const String&in = String(\"\t\")) const", asMETHOD(XMLFile, ToString), asCALL_THISCALL);
     engine->RegisterObjectMethod("XMLFile", "XMLElement get_root()", asFUNCTION(XMLFileGetRootDefault), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("XMLFile", "void Patch(XMLFile@+)", asMETHODPR(XMLFile, Patch, (XMLFile*), void), asCALL_THISCALL);
-    engine->RegisterObjectMethod("XMLFile", "void Patch(XMLElement)", asMETHODPR(XMLFile, Patch, (XMLElement), void), asCALL_THISCALL);
+    engine->RegisterObjectMethod("XMLFile", "void Patch(const XMLElement&in)", asMETHODPR(XMLFile, Patch, (const XMLElement&), void), asCALL_THISCALL);
 }
 
 void RegisterResourceAPI(asIScriptEngine* engine)

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2016 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -47,7 +47,6 @@ using namespace Windows::Phone::UI::Input;
 
 /* SDL includes */
 extern "C" {
-#include "../../SDL_internal.h"
 #include "SDL_assert.h"
 #include "SDL_events.h"
 #include "SDL_hints.h"
@@ -129,7 +128,8 @@ extern "C" __declspec(dllexport) void SDL_WINRT_SubscribeToWindowEvents()
 	fakeApp->SetWindow(CoreWindow::GetForCurrentThread());
 }
 
-static void WINRT_SetDisplayOrientationsPreference(void *userdata, const char *name, const char *oldValue, const char *newValue)
+static void SDLCALL 
+WINRT_SetDisplayOrientationsPreference(void *userdata, const char *name, const char *oldValue, const char *newValue)
 {
     SDL_assert(SDL_strcmp(name, SDL_HINT_ORIENTATIONS) == 0);
 
