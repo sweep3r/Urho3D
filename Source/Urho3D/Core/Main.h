@@ -30,6 +30,7 @@
 #ifdef _MSC_VER
 #include <crtdbg.h>
 #endif
+#undef SendMessage
 #endif
 
 // Define a platform-specific main function, which in turn executes the user-defined function
