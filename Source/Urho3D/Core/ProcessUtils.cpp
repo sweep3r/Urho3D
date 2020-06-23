@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -433,14 +433,14 @@ unsigned GetNumPhysicalCPUs()
 #if defined(IOS)
     host_basic_info_data_t data;
     GetCPUData(&data);
-#if defined(TARGET_OS_SIMULATOR)
+#if TARGET_OS_SIMULATOR
     // Hardcoded to dual-core on simulator mode even if the host has more
     return Min(2, data.physical_cpu);
 #else
     return data.physical_cpu;
 #endif
 #elif defined(TVOS)
-#if defined(TARGET_OS_SIMULATOR)
+#if TARGET_OS_SIMULATOR
     return Min(2, SDL_TVOS_GetActiveProcessorCount());
 #else
     return SDL_TVOS_GetActiveProcessorCount();
@@ -467,13 +467,13 @@ unsigned GetNumLogicalCPUs()
 #if defined(IOS)
     host_basic_info_data_t data;
     GetCPUData(&data);
-#if defined(TARGET_OS_SIMULATOR)
+#if TARGET_OS_SIMULATOR
     return Min(2, data.logical_cpu);
 #else
     return data.logical_cpu;
 #endif
 #elif defined(TVOS)
-#if defined(TARGET_OS_SIMULATOR)
+#if TARGET_OS_SIMULATOR
     return Min(2, SDL_TVOS_GetActiveProcessorCount());
 #else
     return SDL_TVOS_GetActiveProcessorCount();

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -89,8 +89,11 @@ AnimationKeyFrame* AnimationTrack::GetKeyFrame(unsigned index)
     return index < keyFrames_.Size() ? &keyFrames_[index] : nullptr;
 }
 
-void AnimationTrack::GetKeyFrameIndex(float time, unsigned& index) const
+bool AnimationTrack::GetKeyFrameIndex(float time, unsigned& index) const
 {
+    if (keyFrames_.Empty())
+        return false;
+
     if (time < 0.0f)
         time = 0.0f;
 
@@ -104,6 +107,8 @@ void AnimationTrack::GetKeyFrameIndex(float time, unsigned& index) const
     // Check for being too far behind
     while (index < keyFrames_.Size() - 1 && time >= keyFrames_[index + 1].time_)
         ++index;
+
+    return true;
 }
 
 Animation::Animation(Context* context) :

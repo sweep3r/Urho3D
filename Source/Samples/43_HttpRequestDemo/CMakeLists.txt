@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2019 the Urho3D project.
+# Copyright (c) 2008-2020 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,10 @@ endif ()
 
 # Define target name
 set (TARGET_NAME 43_HttpRequestDemo)
+
+if (URHO3D_SSL)
+    add_definitions (-DURHO3D_SSL)
+endif ()
 
 # Define source files
 define_source_files (EXTRA_H_FILES ${COMMON_SAMPLE_H_FILES})

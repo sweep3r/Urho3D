@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -102,6 +102,9 @@ void RenderSurface::OnDeviceLost()
 
     // Clean up also from non-active FBOs
     graphics->CleanupRenderSurface(this);
+
+    if (renderBuffer_ && !graphics->IsDeviceLost())
+        glDeleteRenderbuffersEXT(1, &renderBuffer_);
 
     renderBuffer_ = 0;
 }

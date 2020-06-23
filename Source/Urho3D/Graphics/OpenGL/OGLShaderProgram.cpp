@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -74,6 +74,9 @@ ShaderProgram::~ShaderProgram()
 
 void ShaderProgram::OnDeviceLost()
 {
+    if (object_.name_ && !graphics_->IsDeviceLost())
+        glDeleteProgram(object_.name_);
+
     GPUObject::OnDeviceLost();
 
     if (graphics_ && graphics_->GetShaderProgram() == this)

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2019 the Urho3D project.
+# Copyright (c) 2008-2020 the Urho3D project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,24 +24,8 @@
 # The cross-compiling logic is ported to CMake as faithful as possible although currently Urho3D does not support all target archs supported by LuaJIT
 
 if (NOT CMAKE_PROJECT_NAME STREQUAL Urho3D)
-    # Set CMake minimum version and CMake policy required by UrhoCommon module
-    if (APPLE)
-        cmake_minimum_required (VERSION 3.4.1)
-    else ()
-        cmake_minimum_required (VERSION 3.2.3)
-    endif ()
-    if (COMMAND cmake_policy)
-        # Libraries linked via full path no longer produce linker search paths
-        cmake_policy (SET CMP0003 NEW)
-        # INTERFACE_LINK_LIBRARIES defines the link interface
-        cmake_policy (SET CMP0022 NEW)
-        # Disallow use of the LOCATION target property - so we set to OLD as we still need it
-        cmake_policy (SET CMP0026 OLD)
-        # MACOSX_RPATH is enabled by default
-        cmake_policy (SET CMP0042 NEW)
-        # Honor the visibility properties for SHARED target types only
-        cmake_policy (SET CMP0063 OLD)
-    endif ()
+    # Set CMake minimum version
+    cmake_minimum_required (VERSION 3.10.2)
 
     # Set project name
     project (Urho3D-ExternalProject-LuaJIT-${ARCH})
