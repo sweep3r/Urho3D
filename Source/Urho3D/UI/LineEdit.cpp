@@ -30,6 +30,8 @@
 #include "../UI/UIEvents.h"
 
 #include "../DebugNew.h"
+//hwd temp
+#include "../IO/Log.h"
 
 #include <SDL/SDL.h>
 
@@ -100,9 +102,6 @@ void LineEdit::ApplyAttributes()
 
 void LineEdit::Update(float timeStep)
 {
-    if (cursorBlinkRate_ > 0.0f)
-        cursorBlinkTimer_ = fmodf(cursorBlinkTimer_ + cursorBlinkRate_ * timeStep, 1.0f);
-
     // Update cursor position if font has changed
     if (text_->GetFont() != lastFont_ || text_->GetFontSize() != lastFontSize_)
     {
@@ -111,8 +110,20 @@ void LineEdit::Update(float timeStep)
         UpdateCursor();
     }
 
-    bool cursorVisible = HasFocus() ? cursorBlinkTimer_ < 0.5f : false;
-    cursor_->SetVisible(cursorVisible);
+    // Update cursor blink  - NOT RIGHT YET
+    if (HasFocus())
+    {
+        if (cursorBlinkRate_ > 0.0f)
+        {
+            cursorBlinkTimer_ = fmodf(cursorBlinkRate_ * timeStep, 1.0f);		
+			
+			//hwd TODO remove cursorBlinkTimer_
+			URHO3D_LOGINFOF("blink timer ---- %f - %f", timeStep, cursorBlinkRate_);
+            cursor_->SetVisible(cursorBlinkTimer_ < 0.6f);
+        }
+        else cursor_->SetVisible(false);
+    }
+    else cursor_->SetVisible(false);
 }
 
 void LineEdit::OnClickBegin(const IntVector2& position, const IntVector2& screenPosition, int button, int buttons, int qualifiers,

@@ -700,9 +700,11 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv *env, jclass cls,
                 (*env)->ReleaseStringUTFChars(env, filesDir, str);
             }
 
+__android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeRunMain() 20."); //hwd temp
             /* Run the application. */
             status = SDL_main(argc, argv);
 
+__android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeRunMain() 21."); //hwd temp
             /* Release the arguments. */
             for (i = 0; i < argc; ++i) {
                 SDL_free(argv[i]);
@@ -714,6 +716,7 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv *env, jclass cls,
         }
         (*env)->ReleaseStringUTFChars(env, function, function_name);
 
+__android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeRunMain() 24."); //hwd temp
         dlclose(library_handle);
 
     } else {
@@ -721,9 +724,11 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv *env, jclass cls,
     }
     (*env)->ReleaseStringUTFChars(env, library, library_file);
 
+__android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeRunMain() 25."); //hwd temp
     /* This is a Java thread, it doesn't need to be Detached from the JVM.
      * Set to mThreadKey value to NULL not to call pthread_create destructor 'Android_JNI_ThreadDestroyed' */
     Android_JNI_SetEnv(NULL);
+__android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeRunMain() 26."); //hwd temp
 
     /* Do not issue an exit or the whole application will terminate instead of just the SDL thread */
     /* exit(status); */

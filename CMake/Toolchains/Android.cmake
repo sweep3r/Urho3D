@@ -1,5 +1,7 @@
 #
 # From https://raw.githubusercontent.com/xamarin/Urho3D/sdl204/CMake/Toolchains/Android.cmake 16/02/17 (14/11/2019)
+# hwd: just added unique numbers to some of the console outs.
+#      NOTE this is the old build, using old r12b NDK.
 #
 
 #
@@ -190,7 +192,7 @@ if (NOT IN_TRY_COMPILE)
         list (FIND ANDROID_SUPPORTED_TOOLCHAINS "${ANDROID_TOOLCHAIN_NAME}" FOUND_INDEX)    # Stringify as the actual variable may be empty
         if (FOUND_INDEX EQUAL -1)
             string (REPLACE ";" "\", \"" PRINTABLE_ANDROID_SUPPORTED_TOOLCHAINS "\"${ANDROID_SUPPORTED_TOOLCHAINS}\"")
-            message (FATAL_ERROR "Unrecognized '${ANDROID_TOOLCHAIN_NAME}' specified in the ANDROID_TOOLCHAIN_NAME option, "
+            message (FATAL_ERROR "Unrecognized '${ANDROID_TOOLCHAIN_NAME}' specified in the ANDROID_TOOLCHAIN_NAME option (1), "
                 "supported values are: ${PRINTABLE_ANDROID_SUPPORTED_TOOLCHAINS}.")
         endif ()
         set (ANDROID_TOOLCHAIN_ROOT ${ANDROID_NDK_TOOLCHAINS_PATH}/${ANDROID_TOOLCHAIN_NAME}${ANDROID_NDK_TOOLCHAINS_SUBPATH})
@@ -231,7 +233,7 @@ if (NOT IN_TRY_COMPILE)
                 list (FIND ANDROID_SUPPORTED_ARM_ABI_MODIFIERS "${ANDROID_ABI_MODIFIER}" FOUND_INDEX)   # Stringify as the variable may be empty
                 if (FOUND_INDEX EQUAL -1)
                     string (REPLACE ";" "\", \"" PRINTABLE_ANDROID_SUPPORTED_ARM_ABI_MODIFIERS "\"${ANDROID_SUPPORTED_ARM_ABI_MODIFIERS}\"")
-                    message (FATAL_ERROR "Unrecognized '${ANDROID_ABI_MODIFIER}' specified in the ANDROID_ABI option, "
+                    message (FATAL_ERROR "Unrecognized '${ANDROID_ABI_MODIFIER}' specified in the ANDROID_ABI option (2), "
                         "supported values are: ${PRINTABLE_ANDROID_SUPPORTED_ARM_ABI_MODIFIERS}.")
                 endif ()
             else ()
@@ -243,7 +245,7 @@ if (NOT IN_TRY_COMPILE)
         list (FIND ANDROID_SUPPORTED_ABIS "${ANDROID_ABI_BASE}" FOUND_INDEX)     # Stringify as the variable may be empty
         if (FOUND_INDEX EQUAL -1)
             string (REPLACE ";" "\", \"" PRINTABLE_ANDROID_SUPPORTED_ABIS "\"${ANDROID_SUPPORTED_ABIS}\"")
-            message (FATAL_ERROR "Unrecognized '${ANDROID_ABI}' specified in the ANDROID_ABI option, "
+            message (FATAL_ERROR "Unrecognized '${ANDROID_ABI}' specified in the ANDROID_ABI option (3), "
                 "supported values are: ${PRINTABLE_ANDROID_SUPPORTED_ABIS}.")
         endif ()
         set (ANDROID_ABI_SAVED ${ANDROID_ABI} CACHE INTERNAL "Last saved value for ANDROID_ABI")
@@ -321,7 +323,7 @@ if (NOT IN_TRY_COMPILE)
         list (FIND SUPPORTED_NATIVE_API_LEVELS_${ANDROID_ARCH_NAME} "${ANDROID_NATIVE_API_LEVEL}" FOUND_INDEX)   # Stringify as the actual variable may be empty
         if (FOUND_INDEX EQUAL -1)
             string (REPLACE ";" "\", \"" PRINTABLE_ANDROID_SUPPORTED_NATIVE_API_LEVELS "\"${SUPPORTED_NATIVE_API_LEVELS_${ANDROID_ARCH_NAME}}\"")
-            message (FATAL_ERROR "Unsupported '${ANDROID_NATIVE_API_LEVEL}' specified in the ANDROID_NATIVE_API_LEVEL option, "
+            message (FATAL_ERROR "Unsupported '${ANDROID_NATIVE_API_LEVEL}' specified in the ANDROID_NATIVE_API_LEVEL option (4), "
                 "supported values are: ${PRINTABLE_ANDROID_SUPPORTED_NATIVE_API_LEVELS}.")
         endif ()
         set (ANDROID_NATIVE_API_LEVEL_SAVED ${ANDROID_NATIVE_API_LEVEL} CACHE INTERNAL "Last saved value for ANDROID_NATIVE_API_LEVEL")
@@ -371,7 +373,7 @@ if (NOT IN_TRY_COMPILE)
         list (FIND ANDROID_SUPPORTED_RUNTIMES "${ANDROID_STL}" FOUND_INDEX)     # Stringify as the actual variable may be empty
         if (FOUND_INDEX EQUAL -1)
             string (REPLACE ";" "\", \"" PRINTABLE_ANDROID_SUPPORTED_RUNTIMES "\"${ANDROID_SUPPORTED_RUNTIMES}\"")
-            message (FATAL_ERROR "Unrecognized '${ANDROID_STL}' specified in the ANDROID_STL option, "
+            message (FATAL_ERROR "Unrecognized '${ANDROID_STL}' specified in the ANDROID_STL option (5), "
                 "supported values are: ${PRINTABLE_ANDROID_SUPPORTED_RUNTIMES}.")
         endif ()
         if (ANDROID_STL STREQUAL system)

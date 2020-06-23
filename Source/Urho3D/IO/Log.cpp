@@ -43,6 +43,9 @@ extern "C" void SDL_IOS_LogMessage(const char* message);
 #include "../DebugNew.h"
 #include "Mono.h"
 
+//hwd temp
+#include <iostream>
+
 namespace Urho3D
 {
 
@@ -162,6 +165,12 @@ void Log::Write(int level, const String& message)
             MutexLock lock(logInstance->logMutex_);
             logInstance->threadMessages_.Push(StoredLogMessage(message, level, false));
         }
+		//hwd temp, but useful?
+		else
+		{
+			std::cout << message.CString();
+			std::cout << "\n";
+		}
 
         return;
     }

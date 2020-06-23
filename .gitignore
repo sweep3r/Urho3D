@@ -25,10 +25,10 @@ build/
 /Source/ThirdParty/LuaJIT/src/host/buildvm_arch.h
 /Source/ThirdParty/LuaJIT/src/host/minilua
 /Source/Urho3D/Precompiled.cpp
-/Source/Urho3D/Urho3D.h
+#/Source/Urho3D/Urho3D.h
 /Source/Urho3D/Urho3D.pc
 /Source/Urho3D/Urho3D.pc.msvc
-/Source/Urho3D/Urho3DAll.h
+#/Source/Urho3D/Urho3DAll.h
 /Source/Urho3D/librevision.h
 
 # Compiled shaders
@@ -113,3 +113,10 @@ Thumbs.db
 .directory
 
 /.vs/
+/xmono/
+/bin/Android
+/bin/x64
+/bin/x86
+
+assets/
+.idea/
